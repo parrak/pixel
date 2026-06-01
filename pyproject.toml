@@ -1,5 +1,5 @@
 [project]
-name = "clinical-ri-lite"
+name = "smarter-rcm"
 version = "0.1.0"
 description = "Synthetic deterministic-first clinical revenue integrity copilot prototype."
 readme = "README.md"
@@ -16,4 +16,3 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-

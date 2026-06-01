@@ -8,12 +8,12 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from clinical_ri_lite.ingestion import load_charts
-from clinical_ri_lite.pipeline import analyze_chart
-from clinical_ri_lite.reviewer.packet import render_reviewer_packet
+from app.core.ingest import load_charts
+from app.workflows.prebill.detector import analyze_chart
+from app.workflows.prebill.packet import render_reviewer_packet
 
 
-CHART_DIR = ROOT / "data" / "charts"
+CHART_DIR = ROOT / "data" / "synthetic_charts"
 
 
 st.set_page_config(page_title="Clinical RI Lite", layout="wide")
@@ -43,7 +43,7 @@ with left:
             st.write(fact.citation.excerpt)
 
 with right:
-    st.subheader("Opportunities for reviewer validation")
+    st.subheader("Possible opportunities for reviewer validation")
     if not opportunities:
         st.info("No deterministic opportunity emitted for this synthetic chart.")
     for opportunity in opportunities:

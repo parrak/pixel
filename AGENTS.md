@@ -1,4 +1,4 @@
-# Clinical RI Lite operating doctrine
+# smarter-rcm operating doctrine
 
 This repo is a venture prototype for a synthetic clinical revenue integrity workflow.
 

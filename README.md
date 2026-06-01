@@ -1,16 +1,28 @@
-# Clinical RI Lite v0.1
+# smarter-rcm
 
-Clinical RI Lite is a local, synthetic clinical revenue integrity copilot prototype. It scans synthetic inpatient chart JSON, normalizes clinical facts, applies deterministic evidence detectors, and emits reviewer-validatable opportunities with chart citations, neutral query drafts, reviewer packets, an eval harness, and a simple Streamlit UI.
+`smarter-rcm` is a local, synthetic clinical revenue integrity prototype. The current working workflow is prebill documentation review: synthetic inpatient charts are ingested, normalized into facts, evaluated by deterministic clinical rules, ranked as possible opportunities for reviewer validation, and rendered into evidence-cited reviewer packets.
 
 This is a venture diligence prototype, not clinical software. It does not ingest PHI, call external APIs, use an LLM for diagnosis detection, or state that a patient definitively has a diagnosis.
 
-## Supported Opportunities
+## Current Workflow
 
-- AKI
-- Sepsis / severe sepsis documentation clarification
-- Acute respiratory failure
+Implemented and tested:
+- Prebill detection for AKI
+- Prebill detection for sepsis / severe sepsis documentation clarification
+- Prebill detection for acute respiratory failure
+- Evidence citations
+- Neutral provider query drafts
+- Reviewer packet generation
+- Prebill eval metrics
+- Streamlit UI
 
-Every surfaced item is framed as an **opportunity for reviewer validation** and includes cited evidence from the synthetic chart.
+Scaffolded for later RCM expansion:
+- Coding assist
+- Denials
+- Charges
+- Utilization management
+- Workqueue routing
+- Payer policy and billing rule surfaces
 
 ## Pipeline
 
@@ -18,11 +30,10 @@ Every surfaced item is framed as an **opportunity for reviewer validation** and 
 synthetic chart JSON
 -> ingestion
 -> normalized facts
--> deterministic evidence detection
--> opportunity object
--> ranking / deduping
+-> deterministic detectors
+-> opportunities
 -> reviewer packet
--> eval report
+-> evals
 -> UI
 ```
 
@@ -30,7 +41,8 @@ synthetic chart JSON
 
 ```bash
 uv run pytest
-uv run python evals/run_eval.py
+uv run python evals/run_all.py
+uv run python evals/run_prebill.py
 uv run streamlit run ui/streamlit_app.py
 ```
 
@@ -38,18 +50,48 @@ The Streamlit app lets a reviewer inspect the selected synthetic chart, coded di
 
 ## Project Layout
 
-- `data/charts/`: 10 synthetic inpatient charts with embedded gold labels; at least 3 are negative controls.
-- `clinical_ri_lite/ingestion.py`: JSON ingestion and fact normalization.
-- `clinical_ri_lite/detectors/`: deterministic AKI, sepsis, and respiratory failure detectors.
-- `clinical_ri_lite/pipeline.py`: detector orchestration, ranking, and deduping.
-- `clinical_ri_lite/reviewer/packet.py`: reviewer packet and compliance-safe framing.
-- `evals/run_eval.py`: metrics harness.
-- `ui/streamlit_app.py`: local demo UI.
-- `tests/`: ingestion, detector, packet/query safety, and eval tests.
+```text
+smarter-rcm/
+  AGENTS.md
+  README.md
+  pyproject.toml
+
+  app/
+    main.py
+    core/
+    rules/
+    workflows/
+    evals/
+
+  data/
+    synthetic_charts/
+    synthetic_denials/
+    synthetic_charge_masters/
+    synthetic_policies/
+    synthetic_claims/
+    gold_labels/
+
+  tests/
+    core/
+    rules/
+    workflows/
+    evals/
+
+  evals/
+    run_all.py
+    run_prebill.py
+    run_coding.py
+    run_denials.py
+    run_charges.py
+    run_um.py
+
+  ui/
+    streamlit_app.py
+```
 
 ## Eval Metrics
 
-`uv run python evals/run_eval.py` reports:
+`uv run python evals/run_prebill.py` reports:
 
 - opportunity recall
 - false positive rate
@@ -58,7 +100,7 @@ The Streamlit app lets a reviewer inspect the selected synthetic chart, coded di
 - provider query safety pass rate
 - reviewer packet completeness
 
-Current v0.1 synthetic-corpus result:
+Current synthetic prebill result:
 
 ```json
 {
@@ -74,7 +116,7 @@ Current v0.1 synthetic-corpus result:
 }
 ```
 
-## Compliance Guardrails
+## Guardrails
 
 - Synthetic data only; no PHI.
 - No external APIs.
@@ -90,6 +132,5 @@ Current v0.1 synthetic-corpus result:
 - AKI logic uses observed creatinine trends inside the chart rather than robust baseline provenance or full KDIGO timing windows.
 - Sepsis logic is simplified to infection concern, antimicrobial therapy, and physiologic abnormalities; it is not a complete Sepsis-3 adjudication engine.
 - Respiratory failure logic uses oxygen escalation plus hypoxemia or distress; it does not model chronic baseline oxygen use.
-- No claims, coding grouper, denial workflow, utilization review integration, EHR integration, user authentication, database, queue, or cloud deployment is included.
-- Reviewer packet generation is deterministic text templating; no local LLM summarizer is used in v0.1.
-
+- Coding assist, denials, charge validation, utilization management, and workqueue modules are scaffolds unless noted otherwise.
+- No claims grouper, denial workflow integration, EHR integration, user authentication, database, queue, or cloud deployment is included.

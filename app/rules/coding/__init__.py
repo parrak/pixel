@@ -1,0 +1,2 @@
+"""Coding assist candidate rules."""
+
