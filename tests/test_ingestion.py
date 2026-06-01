@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from smarterdx_lite.ingestion import load_charts
+from clinical_ri_lite.ingestion import load_charts
 
 
 def test_corpus_has_required_shape():

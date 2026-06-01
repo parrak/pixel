@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from smarterdx_lite.detectors import aki, respiratory_failure, sepsis
-from smarterdx_lite.models import NormalizedChart, Opportunity
+from clinical_ri_lite.detectors import aki, respiratory_failure, sepsis
+from clinical_ri_lite.models import NormalizedChart, Opportunity
 
 
 DETECTORS = [aki.detect, sepsis.detect, respiratory_failure.detect]

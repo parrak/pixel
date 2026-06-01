@@ -8,16 +8,16 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from smarterdx_lite.ingestion import load_charts
-from smarterdx_lite.pipeline import analyze_chart
-from smarterdx_lite.reviewer.packet import render_reviewer_packet
+from clinical_ri_lite.ingestion import load_charts
+from clinical_ri_lite.pipeline import analyze_chart
+from clinical_ri_lite.reviewer.packet import render_reviewer_packet
 
 
 CHART_DIR = ROOT / "data" / "charts"
 
 
-st.set_page_config(page_title="SmarterDx-lite", layout="wide")
-st.title("SmarterDx-lite v0.1")
+st.set_page_config(page_title="Clinical RI Lite", layout="wide")
+st.title("Clinical RI Lite v0.1")
 st.caption("Synthetic deterministic-first clinical revenue integrity copilot. No PHI. No external APIs.")
 
 charts = load_charts(CHART_DIR)

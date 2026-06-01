@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from smarterdx_lite.detectors.common import lab_values, note_evidence
-from smarterdx_lite.models import EvidenceItem, NormalizedChart, Opportunity
+from clinical_ri_lite.detectors.common import lab_values, note_evidence
+from clinical_ri_lite.models import EvidenceItem, NormalizedChart, Opportunity
 
 
 def detect(chart: NormalizedChart) -> list[Opportunity]:

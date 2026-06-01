@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from smarterdx_lite.models import NormalizedChart, Opportunity
+from clinical_ri_lite.models import NormalizedChart, Opportunity
 
 
 def render_reviewer_packet(chart: NormalizedChart, opportunity: Opportunity) -> str:
