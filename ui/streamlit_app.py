@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.core.ingest import load_charts
-from app.workflows.prebill.detector import analyze_chart
+from app.workflows.prebill.detector import analyze_evidence_graph
 from app.workflows.prebill.packet import render_reviewer_packet
 
 
@@ -24,7 +24,7 @@ charts = load_charts(CHART_DIR)
 chart_ids = [chart.chart_id for chart in charts]
 selected_id = st.sidebar.selectbox("Synthetic chart", chart_ids)
 chart = next(item for item in charts if item.chart_id == selected_id)
-opportunities = analyze_chart(chart)
+opportunities = analyze_evidence_graph(chart.evidence_graph)
 
 st.sidebar.metric("Opportunities", len(opportunities))
 st.sidebar.write("Gold labels:", chart.raw.get("gold_opportunities", []))

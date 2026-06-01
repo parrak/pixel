@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.core.encounter_graph import build_encounter_graph
+from app.core.evidence_graph import EvidenceGraph
 from app.core.models import Citation, Fact, NormalizedChart
 
 
@@ -60,12 +62,15 @@ def normalize_chart(chart: dict) -> NormalizedChart:
         )
         facts.append(Fact("note", note.get("type", "note").lower(), note["text"], "", note["timestamp"], citation))
 
-    return NormalizedChart(
+    encounter_graph = build_encounter_graph(chart)
+    normalized = NormalizedChart(
         chart_id=chart["chart_id"],
         patient=chart.get("patient", {}),
         encounter=chart.get("encounter", {}),
         coded_diagnoses=chart.get("coded_diagnoses", []),
         facts=sorted(facts, key=lambda fact: fact.timestamp),
         raw=chart,
+        encounter_graph=encounter_graph,
     )
-
+    normalized.evidence_graph = EvidenceGraph(encounter_graph)
+    return normalized

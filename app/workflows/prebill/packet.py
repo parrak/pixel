@@ -8,9 +8,10 @@ def render_reviewer_packet(chart: NormalizedChart, opportunity: Opportunity) -> 
     for index, item in enumerate(opportunity.evidence, start=1):
         citation = item.citation
         value = f" Value: {item.value}." if item.value else ""
+        graph_links = ", ".join(link.entity_id for link in item.links)
         evidence_lines.append(
             f"{index}. {item.criterion}.{value} Citation: {citation.source_type} {citation.source_id} "
-            f"at {citation.timestamp}: {citation.excerpt}"
+            f"at {citation.timestamp}: {citation.excerpt} Graph evidence: {graph_links}"
         )
 
     audit_lines = "\n".join(f"- {line}" for line in opportunity.audit_trace)

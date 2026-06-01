@@ -6,7 +6,7 @@ from typing import Iterable
 from app.core.ingest import load_charts
 from app.core.terminology import count_unsupported_assertions
 from app.evals.assertions import query_is_safe
-from app.workflows.prebill.detector import analyze_chart
+from app.workflows.prebill.detector import analyze_evidence_graph
 from app.workflows.prebill.packet import packet_is_complete, render_reviewer_packet
 
 
@@ -27,7 +27,7 @@ def run_prebill_eval(chart_dir: Path = Path("data/synthetic_charts")) -> dict:
 
     for chart in charts:
         expected = _families(chart.raw.get("gold_opportunities", []))
-        opportunities = analyze_chart(chart)
+        opportunities = analyze_evidence_graph(chart.evidence_graph)
         emitted = _families(opportunity.diagnosis_family for opportunity in opportunities)
         expected_total += len(expected)
         emitted_total += len(opportunities)
@@ -55,4 +55,3 @@ def run_prebill_eval(chart_dir: Path = Path("data/synthetic_charts")) -> dict:
         "provider_query_safety_pass_rate": query_safe / emitted_total if emitted_total else 1.0,
         "reviewer_packet_completeness": packet_complete / emitted_total if emitted_total else 1.0,
     }
-

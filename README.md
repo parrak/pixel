@@ -1,6 +1,6 @@
 # smarter-rcm
 
-`smarter-rcm` is a local, synthetic clinical revenue integrity prototype. The current working workflow is prebill documentation review: synthetic inpatient charts are ingested, normalized into facts, evaluated by deterministic clinical rules, ranked as possible opportunities for reviewer validation, and rendered into evidence-cited reviewer packets.
+`smarter-rcm` is a local, synthetic clinical revenue integrity prototype. The current working workflow is prebill documentation review: synthetic inpatient charts are ingested into a shared encounter graph, evaluated through an evidence graph by deterministic clinical rules, ranked as possible opportunities for reviewer validation, and rendered into evidence-cited reviewer packets.
 
 This is a venture diligence prototype, not clinical software. It does not ingest PHI, call external APIs, use an LLM for diagnosis detection, or state that a patient definitively has a diagnosis.
 
@@ -29,7 +29,8 @@ Scaffolded for later RCM expansion:
 ```text
 synthetic chart JSON
 -> ingestion
--> normalized facts
+-> encounter graph
+-> evidence graph
 -> deterministic detectors
 -> opportunities
 -> reviewer packet
