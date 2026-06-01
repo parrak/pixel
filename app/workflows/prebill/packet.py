@@ -1,9 +1,17 @@
 from __future__ import annotations
 
-from app.core.models import NormalizedChart, Opportunity
+from app.core.models import NormalizedChart, Opportunity, ReviewerAction
 
 
 def render_reviewer_packet(chart: NormalizedChart, opportunity: Opportunity) -> str:
+    return _render_packet(chart.chart_id, opportunity, opportunity.audit_trace)
+
+
+def render_reviewer_action_packet(action: ReviewerAction) -> str:
+    return _render_packet(action.chart_id, action.opportunity, action.audit_trace.events)
+
+
+def _render_packet(chart_id: str, opportunity: Opportunity, audit_events: list[str]) -> str:
     evidence_lines = []
     for index, item in enumerate(opportunity.evidence, start=1):
         citation = item.citation
@@ -14,11 +22,11 @@ def render_reviewer_packet(chart: NormalizedChart, opportunity: Opportunity) -> 
             f"at {citation.timestamp}: {citation.excerpt} Graph evidence: {graph_links}"
         )
 
-    audit_lines = "\n".join(f"- {line}" for line in opportunity.audit_trace)
+    audit_lines = "\n".join(f"- {line}" for line in audit_events)
     evidence_text = "\n".join(evidence_lines)
     return (
         f"Reviewer packet\n"
-        f"Chart: {chart.chart_id}\n"
+        f"Chart: {chart_id}\n"
         f"Opportunity: {opportunity.title}\n"
         f"Reviewer framing: {opportunity.summary}\n"
         f"Documentation gap: {opportunity.missing_or_weak_documentation}\n\n"

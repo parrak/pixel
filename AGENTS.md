@@ -15,7 +15,7 @@ This is not a medical device, not a coding authority, not a claims system, and n
 Prefer deterministic, auditable logic for detection.
 
 Pipeline:
-synthetic chart JSON -> ingestion -> normalized facts -> deterministic detectors -> opportunities -> reviewer packet -> evals -> UI
+encounter bundle -> encounter graph -> evidence graph -> workflow agents -> reviewer actions -> evals -> UI
 
 ## Clinical safety rules
 

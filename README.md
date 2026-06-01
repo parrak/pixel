@@ -1,6 +1,6 @@
 # smarter-rcm
 
-`smarter-rcm` is a local, synthetic clinical revenue integrity prototype. The current working workflow is prebill documentation review: synthetic inpatient charts are ingested into a shared encounter graph, evaluated through an evidence graph by deterministic clinical rules, ranked as possible opportunities for reviewer validation, and rendered into evidence-cited reviewer packets.
+`smarter-rcm` is a local, synthetic clinical revenue integrity prototype. The current working workflow is prebill documentation review: synthetic encounter bundles are converted into a shared encounter graph, evaluated through an evidence graph by workflow agents, and routed as evidence-cited reviewer actions.
 
 This is a venture diligence prototype, not clinical software. It does not ingest PHI, call external APIs, use an LLM for diagnosis detection, or state that a patient definitively has a diagnosis.
 
@@ -12,7 +12,7 @@ Implemented and tested:
 - Prebill detection for acute respiratory failure
 - Evidence citations
 - Neutral provider query drafts
-- Reviewer packet generation
+- Reviewer action and packet generation
 - Prebill eval metrics
 - Streamlit UI
 
@@ -28,12 +28,11 @@ Scaffolded for later RCM expansion:
 
 ```text
 synthetic chart JSON
--> ingestion
+-> encounter bundle
 -> encounter graph
 -> evidence graph
--> deterministic detectors
--> opportunities
--> reviewer packet
+-> workflow agents
+-> reviewer actions
 -> evals
 -> UI
 ```
@@ -47,7 +46,7 @@ uv run python evals/run_prebill.py
 uv run streamlit run ui/streamlit_app.py
 ```
 
-The Streamlit app lets a reviewer inspect the selected synthetic chart, coded diagnoses, ranked opportunities, evidence timeline, reviewer packet, neutral provider query, and audit trace.
+The Streamlit app lets a reviewer inspect the selected synthetic encounter bundle, coded diagnoses, ranked reviewer actions, graph-backed evidence timeline, reviewer packet, neutral provider query, and audit trace.
 
 ## Project Layout
 
@@ -112,6 +111,7 @@ Current synthetic prebill result:
   "opportunities_expected": 10,
   "opportunity_recall": 1.0,
   "provider_query_safety_pass_rate": 1.0,
+  "reviewer_actions_emitted": 10,
   "reviewer_packet_completeness": 1.0,
   "unsupported_assertion_count": 0
 }
@@ -122,7 +122,7 @@ Current synthetic prebill result:
 - Synthetic data only; no PHI.
 - No external APIs.
 - Deterministic rules are the source of truth for detection.
-- No opportunity is emitted without evidence citations.
+- No reviewer action is emitted without graph-backed evidence citations.
 - Packets and queries avoid definitive diagnosis statements.
 - Queries are neutral and include “if clinically appropriate.”
 - The prototype optimizes for clinical validity and documentation accuracy, not revenue capture.

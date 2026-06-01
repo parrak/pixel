@@ -6,8 +6,8 @@ from typing import Iterable
 from app.core.ingest import load_charts
 from app.core.terminology import count_unsupported_assertions
 from app.evals.assertions import query_is_safe
-from app.workflows.prebill.detector import analyze_evidence_graph
-from app.workflows.prebill.packet import packet_is_complete, render_reviewer_packet
+from app.workflows.prebill.agent import run_prebill_agent
+from app.workflows.prebill.packet import packet_is_complete
 
 
 def _families(items: Iterable[str]) -> set[str]:
@@ -20,6 +20,7 @@ def run_prebill_eval(chart_dir: Path = Path("data/synthetic_charts")) -> dict:
     true_positive = 0
     false_positive = 0
     emitted_total = 0
+    reviewer_actions = 0
     citation_complete = 0
     unsupported_assertions = 0
     query_safe = 0
@@ -27,17 +28,20 @@ def run_prebill_eval(chart_dir: Path = Path("data/synthetic_charts")) -> dict:
 
     for chart in charts:
         expected = _families(chart.raw.get("gold_opportunities", []))
-        opportunities = analyze_evidence_graph(chart.evidence_graph)
+        actions = run_prebill_agent(chart.evidence_graph)
+        opportunities = [action.opportunity for action in actions]
         emitted = _families(opportunity.diagnosis_family for opportunity in opportunities)
         expected_total += len(expected)
         emitted_total += len(opportunities)
+        reviewer_actions += len(actions)
         true_positive += len(expected & emitted)
         false_positive += len(emitted - expected)
 
-        for opportunity in opportunities:
+        for action in actions:
+            opportunity = action.opportunity
             if opportunity.has_evidence():
                 citation_complete += 1
-            packet = render_reviewer_packet(chart, opportunity)
+            packet = action.packet
             unsupported_assertions += count_unsupported_assertions(packet)
             if query_is_safe(opportunity.query):
                 query_safe += 1
@@ -48,6 +52,7 @@ def run_prebill_eval(chart_dir: Path = Path("data/synthetic_charts")) -> dict:
         "charts": len(charts),
         "opportunities_expected": expected_total,
         "opportunities_emitted": emitted_total,
+        "reviewer_actions_emitted": reviewer_actions,
         "opportunity_recall": true_positive / expected_total if expected_total else 1.0,
         "false_positive_rate": false_positive / emitted_total if emitted_total else 0.0,
         "evidence_citation_completeness": citation_complete / emitted_total if emitted_total else 1.0,

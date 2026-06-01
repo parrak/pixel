@@ -145,6 +145,24 @@ class AuditTrace:
 
 
 @dataclass
+class EncounterBundle:
+    bundle_id: str
+    source_type: str
+    payload: Dict[str, Any]
+
+    @property
+    def chart_id(self) -> str:
+        return self.bundle_id
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "bundle_id": self.bundle_id,
+            "source_type": self.source_type,
+            "payload": self.payload,
+        }
+
+
+@dataclass
 class NormalizedChart:
     chart_id: str
     patient: Dict[str, Any]
@@ -187,4 +205,33 @@ class Opportunity:
             "missing_or_weak_documentation": self.missing_or_weak_documentation,
             "query": self.query,
             "audit_trace": list(self.audit_trace),
+        }
+
+
+@dataclass
+class ReviewerAction:
+    action_id: str
+    workflow: str
+    chart_id: str
+    action_type: str
+    title: str
+    priority: int
+    opportunity: Opportunity
+    packet: str
+    audit_trace: AuditTrace
+
+    def has_graph_evidence(self) -> bool:
+        return self.opportunity.has_evidence()
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "action_id": self.action_id,
+            "workflow": self.workflow,
+            "chart_id": self.chart_id,
+            "action_type": self.action_type,
+            "title": self.title,
+            "priority": self.priority,
+            "opportunity": self.opportunity.to_json(),
+            "packet": self.packet,
+            "audit_trace": self.audit_trace.to_json(),
         }

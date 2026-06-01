@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from app.core.encounter_graph import build_encounter_graph
 from app.core.evidence_graph import EvidenceGraph
-from app.core.models import Citation, Fact, NormalizedChart
+from app.core.models import Citation, EncounterBundle, Fact, NormalizedChart
+
+
+def normalize_bundle(bundle: EncounterBundle) -> NormalizedChart:
+    return normalize_chart(bundle.payload)
 
 
 def normalize_chart(chart: dict) -> NormalizedChart:
