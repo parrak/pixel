@@ -1,5 +1,5 @@
 [project]
-name = "smarterdx-lite"
+name = "clinical-ri-lite"
 version = "0.1.0"
 description = "Synthetic deterministic-first clinical revenue integrity copilot prototype."
 readme = "README.md"

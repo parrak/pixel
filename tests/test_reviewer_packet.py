@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from smarterdx_lite.ingestion import load_charts
-from smarterdx_lite.pipeline import analyze_chart
-from smarterdx_lite.reviewer.packet import packet_is_complete, render_reviewer_packet
-from smarterdx_lite.text import count_unsupported_assertions
+from clinical_ri_lite.ingestion import load_charts
+from clinical_ri_lite.pipeline import analyze_chart
+from clinical_ri_lite.reviewer.packet import packet_is_complete, render_reviewer_packet
+from clinical_ri_lite.text import count_unsupported_assertions
 
 
 def test_packets_are_complete_and_do_not_assert_diagnosis():

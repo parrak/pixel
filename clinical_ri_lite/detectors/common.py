@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Iterable, List, Optional
 
-from smarterdx_lite.models import EvidenceItem, Fact, NormalizedChart
-from smarterdx_lite.text import contains_any
+from clinical_ri_lite.models import EvidenceItem, Fact, NormalizedChart
+from clinical_ri_lite.text import contains_any
 
 
 def note_evidence(chart: NormalizedChart, criterion: str, terms: Iterable[str]) -> Optional[EvidenceItem]:

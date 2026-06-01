@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Iterable, List
 
-from smarterdx_lite.models import Citation, Fact, NormalizedChart
+from clinical_ri_lite.models import Citation, Fact, NormalizedChart
 
 
 def load_chart(path: Path) -> NormalizedChart:

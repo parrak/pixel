@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from smarterdx_lite.detectors.common import lab_values, medication_evidence, note_evidence, vital_values
-from smarterdx_lite.models import EvidenceItem, NormalizedChart, Opportunity
+from clinical_ri_lite.detectors.common import lab_values, medication_evidence, note_evidence, vital_values
+from clinical_ri_lite.models import EvidenceItem, NormalizedChart, Opportunity
 
 
 ANTIBIOTICS = ["ceftriaxone", "vancomycin", "piperacillin", "zosyn", "cefepime", "azithromycin"]

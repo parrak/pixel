@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from smarterdx_lite.ingestion import load_chart, load_charts
-from smarterdx_lite.pipeline import analyze_chart
+from clinical_ri_lite.ingestion import load_chart, load_charts
+from clinical_ri_lite.pipeline import analyze_chart
 
 
 def families(chart_id: str) -> set[str]:

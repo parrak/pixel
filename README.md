@@ -1,6 +1,6 @@
-# SmarterDx-lite v0.1
+# Clinical RI Lite v0.1
 
-SmarterDx-lite is a local, synthetic clinical revenue integrity copilot prototype. It scans synthetic inpatient chart JSON, normalizes clinical facts, applies deterministic evidence detectors, and emits reviewer-validatable opportunities with chart citations, neutral query drafts, reviewer packets, an eval harness, and a simple Streamlit UI.
+Clinical RI Lite is a local, synthetic clinical revenue integrity copilot prototype. It scans synthetic inpatient chart JSON, normalizes clinical facts, applies deterministic evidence detectors, and emits reviewer-validatable opportunities with chart citations, neutral query drafts, reviewer packets, an eval harness, and a simple Streamlit UI.
 
 This is a venture diligence prototype, not clinical software. It does not ingest PHI, call external APIs, use an LLM for diagnosis detection, or state that a patient definitively has a diagnosis.
 
@@ -39,10 +39,10 @@ The Streamlit app lets a reviewer inspect the selected synthetic chart, coded di
 ## Project Layout
 
 - `data/charts/`: 10 synthetic inpatient charts with embedded gold labels; at least 3 are negative controls.
-- `smarterdx_lite/ingestion.py`: JSON ingestion and fact normalization.
-- `smarterdx_lite/detectors/`: deterministic AKI, sepsis, and respiratory failure detectors.
-- `smarterdx_lite/pipeline.py`: detector orchestration, ranking, and deduping.
-- `smarterdx_lite/reviewer/packet.py`: reviewer packet and compliance-safe framing.
+- `clinical_ri_lite/ingestion.py`: JSON ingestion and fact normalization.
+- `clinical_ri_lite/detectors/`: deterministic AKI, sepsis, and respiratory failure detectors.
+- `clinical_ri_lite/pipeline.py`: detector orchestration, ranking, and deduping.
+- `clinical_ri_lite/reviewer/packet.py`: reviewer packet and compliance-safe framing.
 - `evals/run_eval.py`: metrics harness.
 - `ui/streamlit_app.py`: local demo UI.
 - `tests/`: ingestion, detector, packet/query safety, and eval tests.
