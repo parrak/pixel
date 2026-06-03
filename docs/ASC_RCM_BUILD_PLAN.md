@@ -13,7 +13,7 @@ ASC RCM Command Center Lite should keep the same deterministic-first pipeline:
 ```text
 synthetic ASC case JSON
 -> normalized ASC case bundle
--> encounter / claim evidence graph
+-> case / claim evidence graph
 -> deterministic RCM detectors
 -> evidence-cited opportunities
 -> human reviewer packets
@@ -25,10 +25,10 @@ The architecture should remain local-only and synthetic-only. Deterministic rule
 
 Primary modules to preserve and adapt:
 
-- `app/core`: shared models, ingest, normalization, graph construction, evidence graph, audit log, guardrail helpers.
-- `app/rules`: deterministic detector rules grouped by ASC revenue cycle domain.
-- `app/workflows`: workflow agents that convert rule findings into reviewer actions and packets.
-- `app/evals`: reusable metric assertions for citation completeness, safety, unsupported claims, and packet completeness.
+- `asc_rcm_lite/core`: shared models, ingest, normalization, graph construction, evidence graph, audit log, guardrail helpers.
+- `asc_rcm_lite/rules`: deterministic detector rules grouped by ASC revenue cycle domain.
+- `asc_rcm_lite/workflows`: workflow agents that convert rule findings into reviewer actions and packets.
+- `asc_rcm_lite/evals`: reusable metric assertions for citation completeness, safety, unsupported claims, and packet completeness.
 - `evals`: command-line eval runners for each workflow.
 - `tests`: detector, workflow, graph, ingest, and eval tests.
 - `ui/streamlit_app.py`: local Streamlit reviewer command center.
