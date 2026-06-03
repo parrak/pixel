@@ -1,0 +1,66 @@
+{
+  "ASC-CASE-001": {
+    "expected_coding_flags": [],
+    "expected_ar_flags": [],
+    "expected_denial_category": null,
+    "expected_workflow_next_action": null,
+    "expected_owner_role": null,
+    "expected_priority_band": null
+  },
+  "ASC-CASE-002": {
+    "expected_coding_flags": [],
+    "expected_ar_flags": ["appeal_deadline_risk", "stale_followup"],
+    "expected_denial_category": "prior_authorization",
+    "expected_workflow_next_action": "prepare_appeal_packet",
+    "expected_owner_role": "denial_specialist",
+    "expected_priority_band": "urgent"
+  },
+  "ASC-CASE-003": {
+    "expected_coding_flags": [],
+    "expected_ar_flags": ["appeal_deadline_risk", "stale_followup"],
+    "expected_denial_category": "prior_authorization",
+    "expected_workflow_next_action": "prepare_appeal_packet",
+    "expected_owner_role": "denial_specialist",
+    "expected_priority_band": "urgent"
+  },
+  "ASC-CASE-004": {
+    "expected_coding_flags": ["documentation_missing_medical_necessity"],
+    "expected_ar_flags": ["appeal_deadline_risk", "stale_followup"],
+    "expected_denial_category": "medical_necessity",
+    "expected_workflow_next_action": "prepare_appeal_packet",
+    "expected_owner_role": "denial_specialist",
+    "expected_priority_band": "urgent"
+  },
+  "ASC-CASE-005": {
+    "expected_coding_flags": ["bundled_procedure_risk"],
+    "expected_ar_flags": [],
+    "expected_denial_category": null,
+    "expected_workflow_next_action": null,
+    "expected_owner_role": null,
+    "expected_priority_band": null
+  },
+  "ASC-CASE-006": {
+    "expected_coding_flags": ["missing_implant_supply_charge"],
+    "expected_ar_flags": [],
+    "expected_denial_category": null,
+    "expected_workflow_next_action": null,
+    "expected_owner_role": null,
+    "expected_priority_band": null
+  },
+  "ASC-CASE-007": {
+    "expected_coding_flags": [],
+    "expected_ar_flags": ["underpayment"],
+    "expected_denial_category": null,
+    "expected_workflow_next_action": "prepare_payer_followup",
+    "expected_owner_role": "biller",
+    "expected_priority_band": "high"
+  },
+  "ASC-CASE-008": {
+    "expected_coding_flags": [],
+    "expected_ar_flags": ["high_dollar_ar", "ar_120_plus", "stale_followup", "missing_payer_response"],
+    "expected_denial_category": null,
+    "expected_workflow_next_action": "prepare_payer_followup",
+    "expected_owner_role": "biller",
+    "expected_priority_band": "urgent"
+  }
+}
