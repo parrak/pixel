@@ -1,0 +1,107 @@
+{
+  "case_id": "ASC-CASE-004",
+  "scenario": "medical necessity denial due to missing conservative therapy documentation",
+  "encounter": {
+    "encounter_id": "ENC-004",
+    "synthetic_patient_id": "SP-004",
+    "facility_id": "FAC-ASC-02",
+    "service_date": "2026-01-21",
+    "specialty": "spine",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "M48.062",
+    "citation": {"source_id": "SRC-004-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-004-1",
+      "encounter_id": "ENC-004",
+      "cpt_code": "62323",
+      "description": "Lumbar interlaminar epidural injection",
+      "surgeon_id": "SURG-SPINE-01",
+      "laterality": "NA",
+      "status": "performed",
+      "citation": {"source_id": "SRC-004-OP", "source_type": "synthetic_op_note", "reference": "line:16"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-004-1",
+      "encounter_id": "ENC-004",
+      "cpt_code": "62323",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "4100.00",
+      "modifiers": [],
+      "description": "ASC lumbar injection facility charge",
+      "citation": {"source_id": "SRC-004-CDM", "source_type": "synthetic_charge_export", "reference": "line:11"}
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-004",
+      "encounter_id": "ENC-004",
+      "payer_id": "PAYER-COM-D",
+      "billed_amount": "4100.00",
+      "status": "denied",
+      "submitted_date": "2026-01-23",
+      "charge_line_ids": ["CHG-004-1"],
+      "citation": {"source_id": "SRC-004-837", "source_type": "synthetic_claim", "reference": "claim:item:1"}
+    }
+  ],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-004",
+      "encounter_id": "ENC-004",
+      "payer_id": "PAYER-COM-D",
+      "status": "approved",
+      "authorized_cpt_codes": ["62323"],
+      "valid_from": "2026-01-10",
+      "valid_to": "2026-02-20",
+      "citation": {"source_id": "SRC-004-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:approval"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-004",
+      "payer_id": "PAYER-COM-D",
+      "policy_type": "medical_necessity",
+      "cpt_code": "62323",
+      "requirement": "Document six weeks of conservative therapy or clinical exception.",
+      "contract_allowed_amount": "1800.00",
+      "citation": {"source_id": "SRC-004-POLICY", "source_type": "synthetic_policy", "reference": "line:medical-necessity"}
+    }
+  ],
+  "denials": [
+    {
+      "denial_id": "DEN-004",
+      "claim_id": "CLM-004",
+      "denial_code": "CO-50",
+      "reason": "Medical necessity not supported; conservative therapy documentation missing.",
+      "denied_amount": "4100.00",
+      "citation": {"source_id": "SRC-004-835", "source_type": "synthetic_remit", "reference": "line:10"}
+    }
+  ],
+  "remits": [],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-004",
+      "encounter_id": "ENC-004",
+      "opportunity_type": "documentation_appeal",
+      "description": "Obtain clinic note evidence for conservative therapy before appeal filing.",
+      "estimated_value": "1800.00",
+      "priority": "medium",
+      "citation": {"source_id": "SRC-004-WQ", "source_type": "synthetic_work_queue", "reference": "item:doc-request"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-004",
+      "encounter_id": "ENC-004",
+      "queue": "denial",
+      "reason": "Medical necessity documentation gap",
+      "status": "open",
+      "due_date": "2026-02-12",
+      "citation": {"source_id": "SRC-004-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

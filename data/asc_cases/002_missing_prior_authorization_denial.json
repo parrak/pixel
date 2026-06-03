@@ -1,0 +1,96 @@
+{
+  "case_id": "ASC-CASE-002",
+  "scenario": "missing prior authorization denial",
+  "encounter": {
+    "encounter_id": "ENC-002",
+    "synthetic_patient_id": "SP-002",
+    "facility_id": "FAC-ASC-01",
+    "service_date": "2026-01-12",
+    "specialty": "pain management",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "M54.16",
+    "citation": {"source_id": "SRC-002-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-002-1",
+      "encounter_id": "ENC-002",
+      "cpt_code": "64483",
+      "description": "Transforaminal epidural injection",
+      "surgeon_id": "SURG-PAIN-01",
+      "laterality": "LT",
+      "status": "performed",
+      "citation": {"source_id": "SRC-002-OP", "source_type": "synthetic_op_note", "reference": "line:18"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-002-1",
+      "encounter_id": "ENC-002",
+      "cpt_code": "64483",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "3600.00",
+      "modifiers": ["LT"],
+      "description": "ASC pain injection facility charge",
+      "citation": {"source_id": "SRC-002-CDM", "source_type": "synthetic_charge_export", "reference": "line:7"}
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-002",
+      "encounter_id": "ENC-002",
+      "payer_id": "PAYER-COM-B",
+      "billed_amount": "3600.00",
+      "status": "denied",
+      "submitted_date": "2026-01-14",
+      "charge_line_ids": ["CHG-002-1"],
+      "citation": {"source_id": "SRC-002-837", "source_type": "synthetic_claim", "reference": "claim:item:1"}
+    }
+  ],
+  "authorizations": [],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-002",
+      "payer_id": "PAYER-COM-B",
+      "policy_type": "prior_authorization",
+      "cpt_code": "64483",
+      "requirement": "Prior authorization required before service.",
+      "contract_allowed_amount": null,
+      "citation": {"source_id": "SRC-002-POLICY", "source_type": "synthetic_policy", "reference": "line:64483"}
+    }
+  ],
+  "denials": [
+    {
+      "denial_id": "DEN-002",
+      "claim_id": "CLM-002",
+      "denial_code": "CO-197",
+      "reason": "Precertification authorization absent.",
+      "denied_amount": "3600.00",
+      "citation": {"source_id": "SRC-002-835", "source_type": "synthetic_remit", "reference": "line:5"}
+    }
+  ],
+  "remits": [],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-002",
+      "encounter_id": "ENC-002",
+      "opportunity_type": "appeal_or_writeoff_prevention",
+      "description": "Validate whether retro authorization or documented emergency exception is available.",
+      "estimated_value": "1550.00",
+      "priority": "high",
+      "citation": {"source_id": "SRC-002-WQ", "source_type": "synthetic_work_queue", "reference": "item:denial-review"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-002",
+      "encounter_id": "ENC-002",
+      "queue": "denial",
+      "reason": "Authorization denial follow-up",
+      "status": "open",
+      "due_date": "2026-02-05",
+      "citation": {"source_id": "SRC-002-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

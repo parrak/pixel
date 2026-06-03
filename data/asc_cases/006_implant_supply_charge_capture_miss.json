@@ -1,0 +1,87 @@
+{
+  "case_id": "ASC-CASE-006",
+  "scenario": "implant/supply charge capture miss",
+  "encounter": {
+    "encounter_id": "ENC-006",
+    "synthetic_patient_id": "SP-006",
+    "facility_id": "FAC-ASC-03",
+    "service_date": "2026-01-28",
+    "specialty": "orthopedics",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "S83.511A",
+    "citation": {"source_id": "SRC-006-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-006-1",
+      "encounter_id": "ENC-006",
+      "cpt_code": "29888",
+      "description": "Arthroscopic ACL reconstruction",
+      "surgeon_id": "SURG-ORTHO-03",
+      "laterality": "LT",
+      "status": "performed",
+      "citation": {"source_id": "SRC-006-OP", "source_type": "synthetic_op_note", "reference": "line:28"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-006-1",
+      "encounter_id": "ENC-006",
+      "cpt_code": "29888",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "14200.00",
+      "modifiers": ["LT"],
+      "description": "ASC ACL reconstruction facility charge",
+      "citation": {"source_id": "SRC-006-CDM", "source_type": "synthetic_charge_export", "reference": "line:19"}
+    }
+  ],
+  "claims": [],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-006",
+      "encounter_id": "ENC-006",
+      "payer_id": "PAYER-COM-F",
+      "status": "approved",
+      "authorized_cpt_codes": ["29888"],
+      "valid_from": "2026-01-15",
+      "valid_to": "2026-02-28",
+      "citation": {"source_id": "SRC-006-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:approval"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-006",
+      "payer_id": "PAYER-COM-F",
+      "policy_type": "implant_reimbursement",
+      "cpt_code": "L8699",
+      "requirement": "Implants reimbursed at invoice cost plus 10 percent when separately billed with invoice.",
+      "contract_allowed_amount": "1320.00",
+      "citation": {"source_id": "SRC-006-CONTRACT", "source_type": "synthetic_contract", "reference": "line:implant-carveout"}
+    }
+  ],
+  "denials": [],
+  "remits": [],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-006",
+      "encounter_id": "ENC-006",
+      "opportunity_type": "charge_capture",
+      "description": "Implant log includes interference screw not present on charge export.",
+      "estimated_value": "1320.00",
+      "priority": "high",
+      "citation": {"source_id": "SRC-006-IMPLANT", "source_type": "synthetic_implant_log", "reference": "line:3"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-006",
+      "encounter_id": "ENC-006",
+      "queue": "pre-bill",
+      "reason": "Missing implant charge validation",
+      "status": "open",
+      "due_date": "2026-01-30",
+      "citation": {"source_id": "SRC-006-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "case_id": "ASC-CASE-003",
+  "scenario": "auth approved but CPT mismatch",
+  "encounter": {
+    "encounter_id": "ENC-003",
+    "synthetic_patient_id": "SP-003",
+    "facility_id": "FAC-ASC-02",
+    "service_date": "2026-01-18",
+    "specialty": "orthopedics",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "M75.121",
+    "citation": {"source_id": "SRC-003-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-003-1",
+      "encounter_id": "ENC-003",
+      "cpt_code": "29827",
+      "description": "Arthroscopic rotator cuff repair",
+      "surgeon_id": "SURG-ORTHO-02",
+      "laterality": "RT",
+      "status": "performed",
+      "citation": {"source_id": "SRC-003-OP", "source_type": "synthetic_op_note", "reference": "line:22"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-003-1",
+      "encounter_id": "ENC-003",
+      "cpt_code": "29827",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "11800.00",
+      "modifiers": ["RT"],
+      "description": "ASC shoulder arthroscopy facility charge",
+      "citation": {"source_id": "SRC-003-CDM", "source_type": "synthetic_charge_export", "reference": "line:9"}
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-003",
+      "encounter_id": "ENC-003",
+      "payer_id": "PAYER-COM-C",
+      "billed_amount": "11800.00",
+      "status": "denied",
+      "submitted_date": "2026-01-20",
+      "charge_line_ids": ["CHG-003-1"],
+      "citation": {"source_id": "SRC-003-837", "source_type": "synthetic_claim", "reference": "claim:item:1"}
+    }
+  ],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-003",
+      "encounter_id": "ENC-003",
+      "payer_id": "PAYER-COM-C",
+      "status": "approved",
+      "authorized_cpt_codes": ["29826"],
+      "valid_from": "2026-01-05",
+      "valid_to": "2026-02-28",
+      "citation": {"source_id": "SRC-003-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:approved-cpt"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-003",
+      "payer_id": "PAYER-COM-C",
+      "policy_type": "authorization_match",
+      "cpt_code": "29827",
+      "requirement": "Paid procedure CPT must match authorized CPT or documented auth revision.",
+      "contract_allowed_amount": "5200.00",
+      "citation": {"source_id": "SRC-003-POLICY", "source_type": "synthetic_policy", "reference": "line:authorization-match"}
+    }
+  ],
+  "denials": [
+    {
+      "denial_id": "DEN-003",
+      "claim_id": "CLM-003",
+      "denial_code": "CO-197",
+      "reason": "Authorized CPT 29826 does not match billed CPT 29827.",
+      "denied_amount": "11800.00",
+      "citation": {"source_id": "SRC-003-835", "source_type": "synthetic_remit", "reference": "line:8"}
+    }
+  ],
+  "remits": [],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-003",
+      "encounter_id": "ENC-003",
+      "opportunity_type": "auth_correction",
+      "description": "Request authorization correction using operative note support for 29827.",
+      "estimated_value": "5200.00",
+      "priority": "high",
+      "citation": {"source_id": "SRC-003-WQ", "source_type": "synthetic_work_queue", "reference": "item:auth-mismatch"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-003",
+      "encounter_id": "ENC-003",
+      "queue": "denial",
+      "reason": "Auth approved CPT mismatch",
+      "status": "open",
+      "due_date": "2026-02-10",
+      "citation": {"source_id": "SRC-003-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

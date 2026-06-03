@@ -1,0 +1,108 @@
+{
+  "case_id": "ASC-CASE-007",
+  "scenario": "underpayment against simple contract",
+  "encounter": {
+    "encounter_id": "ENC-007",
+    "synthetic_patient_id": "SP-007",
+    "facility_id": "FAC-ASC-01",
+    "service_date": "2026-01-30",
+    "specialty": "ophthalmology",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "H25.11",
+    "citation": {"source_id": "SRC-007-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-007-1",
+      "encounter_id": "ENC-007",
+      "cpt_code": "66984",
+      "description": "Cataract removal with lens insertion",
+      "surgeon_id": "SURG-EYE-01",
+      "laterality": "RT",
+      "status": "performed",
+      "citation": {"source_id": "SRC-007-OP", "source_type": "synthetic_op_note", "reference": "line:13"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-007-1",
+      "encounter_id": "ENC-007",
+      "cpt_code": "66984",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "4800.00",
+      "modifiers": ["RT"],
+      "description": "ASC cataract facility charge",
+      "citation": {"source_id": "SRC-007-CDM", "source_type": "synthetic_charge_export", "reference": "line:21"}
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-007",
+      "encounter_id": "ENC-007",
+      "payer_id": "PAYER-COM-G",
+      "billed_amount": "4800.00",
+      "status": "paid_under_expected",
+      "submitted_date": "2026-02-01",
+      "charge_line_ids": ["CHG-007-1"],
+      "citation": {"source_id": "SRC-007-837", "source_type": "synthetic_claim", "reference": "claim:item:1"}
+    }
+  ],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-007",
+      "encounter_id": "ENC-007",
+      "payer_id": "PAYER-COM-G",
+      "status": "approved",
+      "authorized_cpt_codes": ["66984"],
+      "valid_from": "2026-01-20",
+      "valid_to": "2026-02-20",
+      "citation": {"source_id": "SRC-007-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:approval"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-007",
+      "payer_id": "PAYER-COM-G",
+      "policy_type": "contract",
+      "cpt_code": "66984",
+      "requirement": "Flat allowed amount for ASC cataract case is 1850.00.",
+      "contract_allowed_amount": "1850.00",
+      "citation": {"source_id": "SRC-007-CONTRACT", "source_type": "synthetic_contract", "reference": "line:66984"}
+    }
+  ],
+  "denials": [],
+  "remits": [
+    {
+      "remit_id": "RMT-007",
+      "claim_id": "CLM-007",
+      "paid_amount": "1450.00",
+      "allowed_amount": "1450.00",
+      "adjustment_codes": ["CO-45"],
+      "remit_date": "2026-02-14",
+      "citation": {"source_id": "SRC-007-835", "source_type": "synthetic_remit", "reference": "line:7"}
+    }
+  ],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-007",
+      "encounter_id": "ENC-007",
+      "opportunity_type": "underpayment_recovery",
+      "description": "Expected allowed 1850.00 less paid 1450.00.",
+      "estimated_value": "400.00",
+      "priority": "medium",
+      "citation": {"source_id": "SRC-007-CONTRACT", "source_type": "synthetic_contract", "reference": "line:66984"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-007",
+      "encounter_id": "ENC-007",
+      "queue": "underpayment",
+      "reason": "Payment below simple contract allowed amount",
+      "status": "open",
+      "due_date": "2026-02-21",
+      "citation": {"source_id": "SRC-007-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

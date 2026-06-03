@@ -1,0 +1,88 @@
+{
+  "case_id": "ASC-CASE-001",
+  "scenario": "clean paid orthopedic arthroscopy",
+  "encounter": {
+    "encounter_id": "ENC-001",
+    "synthetic_patient_id": "SP-001",
+    "facility_id": "FAC-ASC-01",
+    "service_date": "2026-01-08",
+    "specialty": "orthopedics",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "M23.231",
+    "citation": {"source_id": "SRC-001-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-001-1",
+      "encounter_id": "ENC-001",
+      "cpt_code": "29881",
+      "description": "Knee arthroscopy with meniscectomy",
+      "surgeon_id": "SURG-ORTHO-01",
+      "laterality": "RT",
+      "status": "performed",
+      "citation": {"source_id": "SRC-001-OP", "source_type": "synthetic_op_note", "reference": "line:12"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-001-1",
+      "encounter_id": "ENC-001",
+      "cpt_code": "29881",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "7200.00",
+      "modifiers": ["RT"],
+      "description": "ASC knee arthroscopy facility charge",
+      "citation": {"source_id": "SRC-001-CDM", "source_type": "synthetic_charge_export", "reference": "line:4"}
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-001",
+      "encounter_id": "ENC-001",
+      "payer_id": "PAYER-COM-A",
+      "billed_amount": "7200.00",
+      "status": "paid",
+      "submitted_date": "2026-01-10",
+      "charge_line_ids": ["CHG-001-1"],
+      "citation": {"source_id": "SRC-001-837", "source_type": "synthetic_claim", "reference": "claim:item:1"}
+    }
+  ],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-001",
+      "encounter_id": "ENC-001",
+      "payer_id": "PAYER-COM-A",
+      "status": "approved",
+      "authorized_cpt_codes": ["29881"],
+      "valid_from": "2026-01-01",
+      "valid_to": "2026-02-15",
+      "citation": {"source_id": "SRC-001-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:approval"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-001",
+      "payer_id": "PAYER-COM-A",
+      "policy_type": "contract",
+      "cpt_code": "29881",
+      "requirement": "Prior authorization required; allowed amount 3100.00.",
+      "contract_allowed_amount": "3100.00",
+      "citation": {"source_id": "SRC-001-CONTRACT", "source_type": "synthetic_contract", "reference": "line:29881"}
+    }
+  ],
+  "denials": [],
+  "remits": [
+    {
+      "remit_id": "RMT-001",
+      "claim_id": "CLM-001",
+      "paid_amount": "3100.00",
+      "allowed_amount": "3100.00",
+      "adjustment_codes": ["CO-45"],
+      "remit_date": "2026-01-24",
+      "citation": {"source_id": "SRC-001-835", "source_type": "synthetic_remit", "reference": "line:2"}
+    }
+  ],
+  "opportunities": [],
+  "work_queue_items": []
+}
