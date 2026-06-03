@@ -25,3 +25,8 @@ def test_corrupted_persistence_file_is_ignored_with_warning(tmp_path: Path):
     path.write_text("{bad", encoding="utf-8")
     assert load_persistence(path) == {"work_items": {}, "audit_log": []}
 
+
+def test_non_object_persistence_root_is_ignored_with_warning(tmp_path: Path):
+    path = tmp_path / "list.json"
+    path.write_text("[]", encoding="utf-8")
+    assert load_persistence(path) == {"work_items": {}, "audit_log": []}

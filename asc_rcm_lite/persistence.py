@@ -18,6 +18,9 @@ def load_persistence(path: str | Path) -> dict[str, object]:
     except Exception:
         warnings.warn("Persistence file is corrupted; ignoring and continuing with empty state.", RuntimeWarning, stacklevel=2)
         return {"work_items": {}, "audit_log": []}
+    if not isinstance(data, dict):
+        warnings.warn("Persistence file root must be an object; ignoring and continuing with empty state.", RuntimeWarning, stacklevel=2)
+        return {"work_items": {}, "audit_log": []}
     validate_no_phi_keys(data)
     return data
 

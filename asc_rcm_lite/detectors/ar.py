@@ -316,7 +316,10 @@ def _aging_bucket(days_in_ar: int) -> str:
 def _parse_date(value: str | None) -> date:
     if not value:
         raise ValidationError("Date value is required for deterministic A/R calculations")
-    return datetime.strptime(value, "%Y-%m-%d").date()
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise ValidationError(f"Invalid deterministic date format: {value}") from exc
 
 
 def _owner_role_from_queue(queue: str) -> str:

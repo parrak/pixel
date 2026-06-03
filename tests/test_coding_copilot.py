@@ -57,6 +57,24 @@ def test_laterality_mismatch_is_flagged_if_synthetic_case_supports_it():
     assert "laterality_mismatch" in issue_types
 
 
+def test_bilateral_modifier_does_not_trigger_false_laterality_mismatch():
+    case = _load_case("001_clean_paid_orthopedic_arthroscopy.json")
+    bilateral_case = replace(
+        case,
+        procedure_cases=(
+            replace(case.procedure_cases[0], laterality="BIL"),
+        ),
+        charge_lines=(
+            replace(case.charge_lines[0], modifiers=("50",)),
+        ),
+    )
+
+    issue_types = {item.coding_issue_type for item in detect_coding_opportunities(bilateral_case)}
+
+    assert "laterality_mismatch" not in issue_types
+    assert "missing_modifier" not in issue_types
+
+
 def test_clean_claim_has_no_coding_opportunity():
     assert detect_coding_opportunities(_load_case("001_clean_paid_orthopedic_arthroscopy.json")) == ()
 

@@ -125,12 +125,16 @@ def _detect_laterality_issues(case: ASCCase, claim_id: str | None) -> list[Codin
     procedures_by_cpt = {item.cpt_code: item for item in case.procedure_cases}
     for charge_line in case.charge_lines:
         procedure = procedures_by_cpt.get(charge_line.cpt_code)
-        if procedure is None or procedure.laterality not in {"RT", "LT"}:
+        if procedure is None:
+            continue
+        normalized_laterality = _normalize_laterality(procedure.laterality)
+        if normalized_laterality is None:
             continue
         modifiers = set(charge_line.modifiers)
-        expected = procedure.laterality
-        opposite = "LT" if expected == "RT" else "RT"
+        expected, opposite = normalized_laterality
         evidence = (procedure.citation.source_id, charge_line.citation.source_id)
+        if "50" in modifiers:
+            continue
         if expected not in modifiers and opposite not in modifiers:
             opportunities.append(
                 _make_opportunity(
@@ -160,6 +164,17 @@ def _detect_laterality_issues(case: ASCCase, claim_id: str | None) -> list[Codin
                 )
             )
     return opportunities
+
+
+def _normalize_laterality(laterality: str) -> tuple[str, str] | None:
+    normalized = laterality.strip().upper()
+    if normalized in {"RT", "RIGHT"}:
+        return ("RT", "LT")
+    if normalized in {"LT", "LEFT"}:
+        return ("LT", "RT")
+    if normalized in {"BIL", "BILATERAL", "BL"}:
+        return None
+    return None
 
 
 def _detect_bundled_modifier_risk(case: ASCCase, claim_id: str | None) -> list[CodingOpportunity]:

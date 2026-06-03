@@ -2,9 +2,12 @@ from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from asc_rcm_lite.copilot.ar_copilot import ARCopilot
 from asc_rcm_lite.detectors.ar import detect_ar_flags
 from asc_rcm_lite.ingestion import load_asc_case
+from asc_rcm_lite.models import ValidationError
 
 
 def _load_case(name: str):
@@ -79,3 +82,8 @@ def test_no_phi_like_fields_appear_in_ar_outputs():
     }
     forbidden = {"name", "first_name", "last_name", "email", "phone", "address", "dob", "mrn", "ssn"}
     assert forbidden.isdisjoint(output.keys())
+
+
+def test_invalid_as_of_date_is_rejected_with_validation_error():
+    with pytest.raises(ValidationError, match="Invalid deterministic date format"):
+        detect_ar_flags(_load_case("008_high_value_120_day_ar_followup.json"), as_of_date="2026/02/01")

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from dataclasses import replace
+
 from asc_rcm_lite.copilot.denial_copilot import DenialCopilot
 from asc_rcm_lite.detectors.denials import detect_denial_opportunities
 from asc_rcm_lite.ingestion import load_asc_case
@@ -39,3 +41,8 @@ def test_appeal_draft_blocks_unsafe_language():
     assert "payer must pay" not in lowered
     assert "guaranteed" not in lowered
 
+
+def test_denial_detector_returns_empty_when_denial_exists_without_claim():
+    case = _load_case("002_missing_prior_authorization_denial.json")
+    claimless_case = replace(case, claims=())
+    assert detect_denial_opportunities(claimless_case) == ()

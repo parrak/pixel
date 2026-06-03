@@ -40,7 +40,7 @@ class DenialOpportunity:
 
 
 def detect_denial_opportunities(case: ASCCase) -> tuple[DenialOpportunity, ...]:
-    if not case.denials:
+    if not case.denials or not case.claims:
         return ()
     claim = case.claims[0]
     work_item = case.work_queue_items[0] if case.work_queue_items else None
