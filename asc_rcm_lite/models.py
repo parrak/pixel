@@ -70,6 +70,8 @@ class EvidenceCitation:
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
+        if not isinstance(data, dict):
+            raise ValidationError(f"Expected a dictionary for EvidenceCitation, got {type(data).__name__}")
         return cls(**data)
 
     def __post_init__(self) -> None:
@@ -257,6 +259,9 @@ class ASCCase:
 
 
 def dataclass_from_mapping(model: type[Any], data: dict[str, Any]) -> Any:
+    if not isinstance(data, dict):
+        raise ValidationError(f"Expected a dictionary for {model.__name__}, got {type(data).__name__}")
+
     model_field_names = {field.name for field in fields(model)}
     unknown = set(data) - model_field_names
     if unknown:

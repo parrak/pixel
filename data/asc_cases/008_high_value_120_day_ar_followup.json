@@ -1,0 +1,109 @@
+{
+  "case_id": "ASC-CASE-008",
+  "scenario": "high-value 120+ day A/R follow-up case",
+  "encounter": {
+    "encounter_id": "ENC-008",
+    "synthetic_patient_id": "SP-008",
+    "facility_id": "FAC-ASC-02",
+    "service_date": "2025-08-20",
+    "specialty": "orthopedics",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "M16.11",
+    "citation": {"source_id": "SRC-008-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-008-1",
+      "encounter_id": "ENC-008",
+      "cpt_code": "27130",
+      "description": "Total hip arthroplasty",
+      "surgeon_id": "SURG-ORTHO-04",
+      "laterality": "RT",
+      "status": "performed",
+      "citation": {"source_id": "SRC-008-OP", "source_type": "synthetic_op_note", "reference": "line:31"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-008-1",
+      "encounter_id": "ENC-008",
+      "cpt_code": "27130",
+      "revenue_code": "490",
+      "units": 1,
+      "charge_amount": "58000.00",
+      "modifiers": ["RT"],
+      "description": "ASC total hip facility charge",
+      "citation": {"source_id": "SRC-008-CDM", "source_type": "synthetic_charge_export", "reference": "line:25"}
+    },
+    {
+      "charge_line_id": "CHG-008-2",
+      "encounter_id": "ENC-008",
+      "cpt_code": "C1776",
+      "revenue_code": "278",
+      "units": 1,
+      "charge_amount": "18400.00",
+      "modifiers": [],
+      "description": "Joint implant supply charge",
+      "citation": {"source_id": "SRC-008-CDM", "source_type": "synthetic_charge_export", "reference": "line:26"}
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "CLM-008",
+      "encounter_id": "ENC-008",
+      "payer_id": "PAYER-COM-H",
+      "billed_amount": "76400.00",
+      "status": "open_ar_120_plus",
+      "submitted_date": "2025-08-24",
+      "charge_line_ids": ["CHG-008-1", "CHG-008-2"],
+      "citation": {"source_id": "SRC-008-837", "source_type": "synthetic_claim", "reference": "claim:item:1"}
+    }
+  ],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-008",
+      "encounter_id": "ENC-008",
+      "payer_id": "PAYER-COM-H",
+      "status": "approved",
+      "authorized_cpt_codes": ["27130"],
+      "valid_from": "2025-08-01",
+      "valid_to": "2025-09-30",
+      "citation": {"source_id": "SRC-008-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:approval"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-008",
+      "payer_id": "PAYER-COM-H",
+      "policy_type": "contract",
+      "cpt_code": "27130",
+      "requirement": "High-cost orthopedic case expected allowed amount 24000.00 plus eligible implant carveout.",
+      "contract_allowed_amount": "24000.00",
+      "citation": {"source_id": "SRC-008-CONTRACT", "source_type": "synthetic_contract", "reference": "line:27130"}
+    }
+  ],
+  "denials": [],
+  "remits": [],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-008",
+      "encounter_id": "ENC-008",
+      "opportunity_type": "ar_follow_up",
+      "description": "Claim remains unpaid more than 120 days after submission with high expected reimbursement.",
+      "estimated_value": "24000.00",
+      "priority": "high",
+      "citation": {"source_id": "SRC-008-AR", "source_type": "synthetic_ar_aging", "reference": "line:120-plus"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-008",
+      "encounter_id": "ENC-008",
+      "queue": "ar-follow-up",
+      "reason": "High-value 120+ day unresolved claim",
+      "status": "open",
+      "due_date": "2026-01-05",
+      "citation": {"source_id": "SRC-008-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

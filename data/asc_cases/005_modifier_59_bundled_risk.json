@@ -1,0 +1,108 @@
+{
+  "case_id": "ASC-CASE-005",
+  "scenario": "modifier 59 / bundled procedure risk",
+  "encounter": {
+    "encounter_id": "ENC-005",
+    "synthetic_patient_id": "SP-005",
+    "facility_id": "FAC-ASC-03",
+    "service_date": "2026-01-25",
+    "specialty": "gastroenterology",
+    "place_of_service": "24",
+    "primary_diagnosis_code": "K63.5",
+    "citation": {"source_id": "SRC-005-SCHED", "source_type": "synthetic_schedule", "reference": "item:encounter"}
+  },
+  "procedure_cases": [
+    {
+      "procedure_case_id": "PROC-005-1",
+      "encounter_id": "ENC-005",
+      "cpt_code": "45385",
+      "description": "Colonoscopy with lesion removal by snare",
+      "surgeon_id": "SURG-GI-01",
+      "laterality": "NA",
+      "status": "performed",
+      "citation": {"source_id": "SRC-005-OP", "source_type": "synthetic_op_note", "reference": "line:20"}
+    },
+    {
+      "procedure_case_id": "PROC-005-2",
+      "encounter_id": "ENC-005",
+      "cpt_code": "45380",
+      "description": "Colonoscopy with biopsy",
+      "surgeon_id": "SURG-GI-01",
+      "laterality": "NA",
+      "status": "performed",
+      "citation": {"source_id": "SRC-005-OP", "source_type": "synthetic_op_note", "reference": "line:24"}
+    }
+  ],
+  "charge_lines": [
+    {
+      "charge_line_id": "CHG-005-1",
+      "encounter_id": "ENC-005",
+      "cpt_code": "45385",
+      "revenue_code": "750",
+      "units": 1,
+      "charge_amount": "5200.00",
+      "modifiers": [],
+      "description": "ASC colonoscopy snare facility charge",
+      "citation": {"source_id": "SRC-005-CDM", "source_type": "synthetic_charge_export", "reference": "line:14"}
+    },
+    {
+      "charge_line_id": "CHG-005-2",
+      "encounter_id": "ENC-005",
+      "cpt_code": "45380",
+      "revenue_code": "750",
+      "units": 1,
+      "charge_amount": "2100.00",
+      "modifiers": ["59"],
+      "description": "Separate biopsy site facility charge",
+      "citation": {"source_id": "SRC-005-CDM", "source_type": "synthetic_charge_export", "reference": "line:15"}
+    }
+  ],
+  "claims": [],
+  "authorizations": [
+    {
+      "authorization_id": "AUTH-005",
+      "encounter_id": "ENC-005",
+      "payer_id": "PAYER-COM-E",
+      "status": "not_required",
+      "authorized_cpt_codes": [],
+      "valid_from": null,
+      "valid_to": null,
+      "citation": {"source_id": "SRC-005-AUTH", "source_type": "synthetic_auth_portal", "reference": "item:not-required"}
+    }
+  ],
+  "payer_policies": [
+    {
+      "payer_policy_id": "POL-005",
+      "payer_id": "PAYER-COM-E",
+      "policy_type": "bundling",
+      "cpt_code": "45380",
+      "requirement": "Modifier 59 requires distinct lesion or separate anatomic site documentation when billed with 45385.",
+      "contract_allowed_amount": "650.00",
+      "citation": {"source_id": "SRC-005-POLICY", "source_type": "synthetic_policy", "reference": "line:bundle-edit"}
+    }
+  ],
+  "denials": [],
+  "remits": [],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-005",
+      "encounter_id": "ENC-005",
+      "opportunity_type": "prebill_coding_review",
+      "description": "Validate modifier 59 support before claim release.",
+      "estimated_value": "650.00",
+      "priority": "medium",
+      "citation": {"source_id": "SRC-005-WQ", "source_type": "synthetic_work_queue", "reference": "item:coding-risk"}
+    }
+  ],
+  "work_queue_items": [
+    {
+      "work_queue_item_id": "WQ-005",
+      "encounter_id": "ENC-005",
+      "queue": "pre-bill",
+      "reason": "Bundled procedure modifier review",
+      "status": "open",
+      "due_date": "2026-01-27",
+      "citation": {"source_id": "SRC-005-WQ", "source_type": "synthetic_work_queue", "reference": "item:1"}
+    }
+  ]
+}

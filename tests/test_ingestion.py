@@ -1,7 +1,10 @@
+import json
 from dataclasses import fields, is_dataclass
 
-from asc_rcm_lite.ingestion import load_asc_cases
-from asc_rcm_lite.models import EvidenceCitation, PHI_LIKE_KEYS
+import pytest
+
+from asc_rcm_lite.ingestion import load_asc_case, load_asc_cases
+from asc_rcm_lite.models import ChargeLine, EvidenceCitation, PHI_LIKE_KEYS, ValidationError, dataclass_from_mapping
 
 
 def _walk(value):
@@ -61,3 +64,24 @@ def test_every_case_has_claim_or_prebill_work_item():
 
     for case in cases:
         assert case.claims or any(item.queue == "pre-bill" for item in case.work_queue_items)
+
+
+def test_load_asc_cases_requires_directory(tmp_path):
+    not_a_directory = tmp_path / "cases.json"
+    not_a_directory.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(NotADirectoryError, match="not a directory"):
+        load_asc_cases(not_a_directory)
+
+
+def test_load_asc_case_requires_json_object_root(tmp_path):
+    case_file = tmp_path / "case.json"
+    case_file.write_text(json.dumps([]), encoding="utf-8")
+
+    with pytest.raises(ValidationError, match="Expected JSON object at root"):
+        load_asc_case(case_file)
+
+
+def test_dataclass_from_mapping_requires_mapping():
+    with pytest.raises(ValidationError, match="Expected a dictionary for ChargeLine"):
+        dataclass_from_mapping(ChargeLine, None)

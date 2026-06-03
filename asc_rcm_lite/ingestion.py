@@ -31,8 +31,8 @@ def load_asc_cases(case_dir: str | Path = DEFAULT_CASE_DIR) -> list[ASCCase]:
     """Load and validate all synthetic case JSON files from a directory."""
 
     directory = Path(case_dir)
-    if not directory.exists():
-        raise FileNotFoundError(f"ASC case directory does not exist: {directory}")
+    if not directory.is_dir():
+        raise NotADirectoryError(f"ASC case directory does not exist or is not a directory: {directory}")
 
     cases = [load_asc_case(path) for path in sorted(directory.glob("*.json"))]
     if not cases:
@@ -44,6 +44,9 @@ def load_asc_case(path: str | Path) -> ASCCase:
     source = Path(path)
     with source.open(encoding="utf-8") as file:
         raw = json.load(file)
+
+    if not isinstance(raw, dict):
+        raise ValidationError(f"Expected JSON object at root of {source}, got {type(raw).__name__}")
 
     validate_no_phi_keys(raw)
     return _case_from_mapping(raw)
@@ -60,13 +63,13 @@ def _case_from_mapping(raw: dict[str, Any]) -> ASCCase:
         case_id=_required(raw, "case_id"),
         scenario=_required(raw, "scenario"),
         encounter=dataclass_from_mapping(PatientEncounter, _required(raw, "encounter")),
-        procedure_cases=tuple(dataclass_from_mapping(ProcedureCase, item) for item in _required(raw, "procedure_cases")),
-        charge_lines=tuple(dataclass_from_mapping(ChargeLine, item) for item in _required(raw, "charge_lines")),
-        claims=tuple(dataclass_from_mapping(Claim, item) for item in _required(raw, "claims")),
-        authorizations=tuple(dataclass_from_mapping(Authorization, item) for item in _required(raw, "authorizations")),
-        payer_policies=tuple(dataclass_from_mapping(PayerPolicy, item) for item in _required(raw, "payer_policies")),
-        denials=tuple(dataclass_from_mapping(Denial, item) for item in _required(raw, "denials")),
-        remits=tuple(dataclass_from_mapping(Remit, item) for item in _required(raw, "remits")),
-        opportunities=tuple(dataclass_from_mapping(RCMOpportunity, item) for item in _required(raw, "opportunities")),
-        work_queue_items=tuple(dataclass_from_mapping(WorkQueueItem, item) for item in _required(raw, "work_queue_items")),
+        procedure_cases=tuple(dataclass_from_mapping(ProcedureCase, item) for item in raw.get("procedure_cases", [])),
+        charge_lines=tuple(dataclass_from_mapping(ChargeLine, item) for item in raw.get("charge_lines", [])),
+        claims=tuple(dataclass_from_mapping(Claim, item) for item in raw.get("claims", [])),
+        authorizations=tuple(dataclass_from_mapping(Authorization, item) for item in raw.get("authorizations", [])),
+        payer_policies=tuple(dataclass_from_mapping(PayerPolicy, item) for item in raw.get("payer_policies", [])),
+        denials=tuple(dataclass_from_mapping(Denial, item) for item in raw.get("denials", [])),
+        remits=tuple(dataclass_from_mapping(Remit, item) for item in raw.get("remits", [])),
+        opportunities=tuple(dataclass_from_mapping(RCMOpportunity, item) for item in raw.get("opportunities", [])),
+        work_queue_items=tuple(dataclass_from_mapping(WorkQueueItem, item) for item in raw.get("work_queue_items", [])),
     )
