@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from decimal import Decimal
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar, TypeVar
+
+
+EvidenceCitationT = TypeVar("EvidenceCitationT", bound="EvidenceCitation")
 
 
 class ValidationError(ValueError):
@@ -69,7 +72,7 @@ class EvidenceCitation:
     reference: str
 
     @classmethod
-    def from_mapping(cls, data: dict[str, Any]) -> Self:
+    def from_mapping(cls: type[EvidenceCitationT], data: dict[str, Any]) -> EvidenceCitationT:
         if not isinstance(data, dict):
             raise ValidationError(f"Expected a dictionary for EvidenceCitation, got {type(data).__name__}")
         return cls(**data)
