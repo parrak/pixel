@@ -2,24 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-from typing import Protocol
-
 from asc_rcm_lite.models import ASCCase
 
 from .context import build_case_context
 from .models import CopilotDraft, CopilotRequest, CopilotResponse, default_generated_at
+from .provider import CopilotProvider, get_copilot_provider
 from .prompts import build_prompt
 from .rules import validate_request, validate_response
 
 
-class CopilotProvider(Protocol):
-    def generate(self, request: CopilotRequest, prompt: str) -> CopilotDraft:
-        """Return a deterministic assistive draft for a validated request."""
-
-
 class CopilotService:
-    def __init__(self, llm: CopilotProvider) -> None:
+    def __init__(self, llm: CopilotProvider | None = None) -> None:
+        if llm is None:
+            llm = get_copilot_provider()
         self.llm = llm
 
     def create_request(
