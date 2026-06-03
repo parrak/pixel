@@ -1,0 +1,2 @@
+"""Deterministic diagnosis opportunity detectors."""
+
