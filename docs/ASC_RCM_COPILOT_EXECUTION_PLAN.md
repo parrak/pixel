@@ -18,7 +18,7 @@ Use `main` as the base branch and continue building the remaining synthetic ASC/
 - [x] Stage 2: A/R Flagging and Work Queue Prioritization
 - [x] Stage 3: Denials / appeals copilot expansion
 - [x] Stage 4: Workflow assistant, payer pattern intelligence, reviewer packets
-- [x] Stage 5: Streamlit ASC RCM Copilot workbench
+- [x] Stage 5: Streamlit Citron Health workbench
 - [x] Stage 6: Copilot eval harness, demo script, docs polish
 
 ## Current completed stages

@@ -1,6 +1,6 @@
 # Compliance Guardrails
 
-ASC RCM Command Center Lite is a synthetic ASC and surgical revenue cycle
+Citron Health is a synthetic ASC and surgical revenue cycle
 prototype. It is designed for workflow demonstration, experimentation, and
 software development only.
 
@@ -28,4 +28,4 @@ synthetic test data.
 Clinical RI Lite material should be treated as legacy clinical revenue integrity
 examples. Existing AKI, sepsis, respiratory, and related Clinical RI Lite tests
 should remain in place when present and should continue to validate the legacy
-examples during the transition to ASC RCM Command Center Lite.
+examples during the transition to Citron Health.

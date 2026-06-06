@@ -1,6 +1,6 @@
-# ASC RCM Copilot Lite
+# Citron Health
 
-ASC RCM Copilot Lite is a synthetic ambulatory surgery center and surgical revenue-cycle copilot prototype. It helps coders, billers, denial specialists, auth specialists, and managers identify work, review cited evidence, understand why it matters, and generate reviewer-safe drafts.
+Citron Health is a synthetic ambulatory surgery center and surgical revenue-cycle copilot prototype. It helps coders, billers, denial specialists, auth specialists, and managers identify work, review cited evidence, understand why it matters, and generate reviewer-safe drafts.
 
 The product is deterministic-first. Synthetic rules, synthetic payer policies, and synthetic contract references are the source of truth. Copilot output is assistive only.
 

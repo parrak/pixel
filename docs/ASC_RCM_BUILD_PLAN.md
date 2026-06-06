@@ -1,4 +1,4 @@
-# ASC RCM Command Center Lite Build Plan
+# Citron Health Build Plan
 
 ## Repository Baseline
 
@@ -8,7 +8,7 @@ This plan does not change runtime behavior.
 
 ## Target Architecture
 
-ASC RCM Command Center Lite should keep the same deterministic-first pipeline:
+Citron Health should keep the same deterministic-first pipeline:
 
 ```text
 synthetic ASC case JSON
@@ -155,7 +155,7 @@ Every eval runner should be executable with `uv run python evals/run_<workflow>.
 
 ## UI Pages
 
-Keep Streamlit as the local UI and convert the page title and workflow surfaces to ASC RCM Command Center Lite.
+Keep Streamlit as the local UI and convert the page title and workflow surfaces to Citron Health.
 
 Proposed pages:
 
@@ -197,7 +197,7 @@ Implementation guardrails:
 
 1. Baseline restoration and rename
    - Bring the Clinical RI Lite code structure from the implementation branch onto `main`.
-   - Rename user-facing product text to ASC RCM Command Center Lite.
+   - Rename user-facing product text to Citron Health.
    - Keep tests, eval runners, synthetic-data folders, and Streamlit entry point intact.
 
 2. Core model conversion
