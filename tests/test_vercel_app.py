@@ -28,8 +28,8 @@ def test_root_page_renders_html():
 
     assert response["status"] == "200 OK"
     assert response["headers"]["Content-Type"].startswith("text/html")
-    assert b"Operator Operating System" in response["body"]
-    assert b"Open Operator Demo" in response["body"]
+    assert b"HoldCo Command Center" in response["body"]
+    assert b"Open HoldCo Demo" in response["body"]
 
 
 def test_demo_page_renders_html():
@@ -37,7 +37,7 @@ def test_demo_page_renders_html():
 
     assert response["status"] == "200 OK"
     assert response["headers"]["Content-Type"].startswith("text/html")
-    assert b"Monday Morning inside Citron" in response["body"]
+    assert b"HoldCo Command Center inside Citron" in response["body"]
 
 
 def test_case_api_requires_case_id():
@@ -55,3 +55,23 @@ def test_case_api_returns_case_payload():
     payload = json.loads(response["body"])
     assert payload["case_id"] == "ASC-CASE-008"
     assert payload["operational_tasks"]
+
+
+def test_holdco_api_returns_phase_four_payload():
+    response = _request("/api/holdco")
+
+    assert response["status"] == "200 OK"
+    payload = json.loads(response["body"])
+    assert payload["holdco"]["holdco_id"] == "holdco_citron"
+    assert payload["holdco_dashboard"]["portfolio_ebitda"]
+    assert payload["value_creation_initiatives"]
+
+
+def test_acquisition_api_returns_integration_plan():
+    response = _request("/api/acquisition", "specialty=Cardiology&headcount=90&workflow_maturity=fragmented")
+
+    assert response["status"] == "200 OK"
+    payload = json.loads(response["body"])
+    assert payload["specialty"] == "Cardiology"
+    assert payload["ninety_day_roadmap"]
+    assert payload["value_creation_opportunities"]

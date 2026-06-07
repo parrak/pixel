@@ -48,7 +48,13 @@ def _format_money(value: object) -> str:
     return f"${value}"
 
 
-st.set_page_config(page_title="Citron Health Operator OS", layout="wide")
+def _format_number(value: object) -> str:
+    if value in (None, "", "None"):
+        return "-"
+    return str(value)
+
+
+st.set_page_config(page_title="Citron Health HoldCo Command Center", layout="wide")
 st.markdown(f"<style>{THEME_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 st.markdown(
     """
@@ -174,11 +180,12 @@ st.markdown(
           <div class="brand-subtitle" style="color:#d8f0c7;">Specialty Revenue Cycle OS</div>
         </div>
       </div>
-      <div class="eyebrow">Citron Health Phase 3</div>
-      <h1 style="margin:0.2rem 0 0.5rem 0;">Operator Operating System</h1>
+      <div class="eyebrow">Citron Health Phase 4</div>
+      <h1 style="margin:0.2rem 0 0.5rem 0;">HoldCo Command Center</h1>
       <p style="margin:0;max-width:58rem;">
-        Citron exists to make acquired specialty RCM businesses better operators. The center of gravity is now
-        portfolio workflow ownership: organization, facility, team, user, task, recommendation, decision, and outcome.
+        Citron exists to make acquired specialty RCM businesses better operators and more valuable assets. The center
+        of gravity is now acquisition, standardization, operational improvement, knowledge compounding, EBITDA
+        expansion, and enterprise value creation.
       </p>
     </div>
     """,
@@ -186,43 +193,68 @@ st.markdown(
 )
 st.warning("Synthetic data only. Human review required. No external APIs. No autonomous workflows.")
 
+holdco = portfolio["holdco"]
+holdco_dashboard = portfolio["holdco_dashboard"]
+decision_intelligence = portfolio["decision_intelligence"]
+
 metric_cols = st.columns(5)
 metric_cols[0].markdown(
-    f"<div class='subtle'><div class='metric-label'>Revenue At Risk</div><div class='metric-value'>${portfolio['portfolio_metrics']['revenue_at_risk']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Portfolio Revenue</div><div class='metric-value'>${holdco_dashboard['portfolio_revenue']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[1].markdown(
-    f"<div class='subtle'><div class='metric-label'>Open Work</div><div class='metric-value'>{portfolio['portfolio_metrics']['open_work']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Portfolio EBITDA</div><div class='metric-value'>${holdco_dashboard['portfolio_ebitda']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[2].markdown(
-    f"<div class='subtle'><div class='metric-label'>Recovery Pipeline</div><div class='metric-value'>${portfolio['portfolio_metrics']['recovery_pipeline']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Revenue At Risk</div><div class='metric-value'>${holdco_dashboard['revenue_at_risk']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[3].markdown(
-    f"<div class='subtle'><div class='metric-label'>Workflow Bottlenecks</div><div class='metric-value'>{len(portfolio['portfolio_metrics']['workflow_bottlenecks'])}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Open Work</div><div class='metric-value'>{holdco_dashboard['open_work']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[4].markdown(
-    f"<div class='subtle'><div class='metric-label'>Organizations</div><div class='metric-value'>{len(portfolio['organizations'])}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Value Creation</div><div class='metric-value'>{_format_number(holdco_dashboard['value_creation_progress']['progress_pct'])}%</div></div>",
     unsafe_allow_html=True,
 )
 
 tabs = st.tabs(
     [
-        "Portfolio OS",
+        "HoldCo Command Center",
+        "Value Creation",
+        "Portfolio Benchmarks",
+        "Playbooks",
+        "Executive Review",
         "Monday Morning",
         "Role Queues",
-        "Decision Memory",
+        "Decision Intelligence",
         "Workflow Engine",
-        "Acquisition Simulator",
+        "Acquisition Integration",
         "Legacy Features",
     ]
 )
 
 with tabs[0]:
-    st.subheader("Portfolio Dashboard")
-    st.caption("Rollup thesis first: portfolio health across ASC Alpha, ASC Bravo, and ASC Charlie.")
+    st.subheader("HoldCo Dashboard")
+    st.caption("What should leadership focus on today across the specialty RCM platform?")
+    lead_left, lead_right = st.columns([1.05, 0.95])
+    lead_left.markdown(
+        _task_card(
+            holdco["name"],
+            "Enterprise Value Flow",
+            " -> ".join(holdco_dashboard["enterprise_value_flow"]),
+        ),
+        unsafe_allow_html=True,
+    )
+    lead_right.json(
+        {
+            "thesis": holdco["thesis"],
+            "focus_today": holdco_dashboard["focus_today"],
+            "critical_bottlenecks": holdco_dashboard["critical_bottlenecks"],
+        }
+    )
+
     org_rows = [
         {
             "organization": summary["name"],
@@ -242,21 +274,97 @@ with tabs[0]:
     selected_org_summary = next(summary for summary in portfolio["organization_summaries"] if summary["name"] == selected_org_name)
     left.json(
         {
-            "organization": selected_org_summary["name"],
-            "thesis": selected_org_summary["thesis"],
-            "aging": selected_org_summary["aging"],
-            "operational_health": selected_org_summary["operational_health"],
+            "portfolio_health": holdco_dashboard["portfolio_health"],
+            "operational_risks": holdco_dashboard["operational_risks"],
+            "recent_acquisitions": holdco_dashboard["recent_acquisitions"],
         }
     )
     right.json(
         {
+            "productivity_trends": holdco_dashboard["productivity_trends"],
+            "value_creation_progress": holdco_dashboard["value_creation_progress"],
             "portfolio_operational_health": portfolio["portfolio_metrics"]["operational_health"],
-            "workflow_counts": portfolio["portfolio_metrics"]["workflow_counts"],
-            "specialist_productivity": portfolio["portfolio_metrics"]["specialist_productivity"],
         }
     )
 
 with tabs[1]:
+    st.subheader("Value Creation System")
+    st.caption("Operational changes tied directly to expected and realized EBITDA impact.")
+    initiative_rows = [
+        {
+            "initiative": item["name"],
+            "owner": f"{item['owner_name']} · {item['owner_title']}",
+            "status": item["status"],
+            "timeline": item["timeline"],
+            "target": item["target"],
+            "expected_ebitda_impact": _format_money(item["expected_ebitda_impact"]),
+            "realized_ebitda_impact": _format_money(item["realized_ebitda_impact"]),
+        }
+        for item in portfolio["value_creation_initiatives"]
+    ]
+    st.dataframe(initiative_rows, use_container_width=True)
+    selected_initiative = portfolio["value_creation_initiatives"][0]
+    st.json(selected_initiative)
+
+with tabs[2]:
+    st.subheader("Portfolio Benchmarking")
+    st.caption("Compare every organization to the portfolio average, top quartile, and best-in-class.")
+    benchmark_org = next(item for item in portfolio["portfolio_benchmarks"]["organizations"] if item["name"] == selected_org_name)
+    benchmark_rows = [
+        {
+            "metric": item["label"],
+            "organization_value": item["organization_value"],
+            "portfolio_average": item["portfolio_average"],
+            "top_quartile": item["top_quartile"],
+            "best_in_class": item["best_in_class"],
+            "direction": item["direction"],
+            "variance_to_average": item["variance_to_average"],
+        }
+        for item in benchmark_org["benchmarks"]
+    ]
+    st.dataframe(benchmark_rows, use_container_width=True)
+    st.info(portfolio["portfolio_benchmarks"]["narrative"])
+
+with tabs[3]:
+    st.subheader("Playbook System")
+    st.caption("Reusable operating playbooks standardize acquired operators across the platform.")
+    selected_playbook_name = st.selectbox("Playbook", [item["name"] for item in portfolio["playbooks"]], key="playbook_selector")
+    playbook = next(item for item in portfolio["playbooks"] if item["name"] == selected_playbook_name)
+    playbook_rows = [
+        {
+            "title": item["title"],
+            "owner_role": ROLE_LABELS.get(item["owner_role"], item["owner_role"]),
+            "dependency": item["dependency"],
+            "expected_outcome": item["expected_outcome"],
+            "financial_impact": _format_money(item["financial_impact"]),
+        }
+        for item in playbook["tasks"]
+    ]
+    st.dataframe(playbook_rows, use_container_width=True)
+    st.json(playbook)
+
+with tabs[4]:
+    review = portfolio["executive_operating_review"]
+    st.subheader("Executive Operating Review")
+    st.caption("Monthly board-style readout for leadership, operating partners, and future executives.")
+    summary_col, perf_col = st.columns([1.1, 0.9])
+    summary_col.json(
+        {
+            "month": review["month"],
+            "executive_summary": review["executive_summary"],
+            "required_decisions": review["required_decisions"],
+        }
+    )
+    perf_col.json(
+        {
+            "financial_performance": review["financial_performance"],
+            "operational_performance": review["operational_performance"],
+            "value_creation_progress": review["value_creation_progress"],
+        }
+    )
+    st.json({"risks": review["risks"], "wins": review["wins"], "benchmark_excerpt": review["benchmark_excerpt"]})
+
+with tabs[5]:
     monday = portfolio["monday_morning"]
     st.subheader(monday["title"])
     st.caption("Guided day-in-the-life experience for an acquired ASC operator running inside Citron.")
@@ -272,7 +380,7 @@ with tabs[1]:
     assign.json({"assignments": monday["assignments"], "critical_work": monday["critical_work"]})
     outcomes.json({"workflow_bottlenecks": monday["workflow_bottlenecks"], "outcomes": monday["outcomes"]})
 
-with tabs[2]:
+with tabs[6]:
     st.subheader(f"{selected_role} Queue")
     st.caption(f"Operational queue for {selected_org_name}. This view is role-first rather than detector-first.")
     role_rows = [
@@ -325,9 +433,15 @@ with tabs[2]:
         unsafe_allow_html=True,
     )
 
-with tabs[3]:
-    st.subheader("Decision Memory")
-    st.caption("Visible history for why work exists, what humans did, and what outcomes resulted.")
+with tabs[7]:
+    st.subheader("Decision Intelligence Foundation")
+    st.caption("Recommendation -> decision -> outcome memory with portfolio-wide visibility into what creates value.")
+    st.json(decision_intelligence["summary"])
+    intel_left, intel_right = st.columns(2)
+    intel_left.json({"what_works": decision_intelligence["what_works"], "what_fails": decision_intelligence["what_fails"]})
+    intel_right.dataframe(decision_intelligence["patterns"], use_container_width=True)
+    st.markdown("---")
+    st.caption("Task-level history remains visible below.")
     history_rows = [
         {
             "record_id": record.record_id,
@@ -355,7 +469,7 @@ with tabs[3]:
             }
         )
 
-with tabs[4]:
+with tabs[8]:
     st.subheader("Workflow Definition Engine")
     st.caption("Workflow definitions are configuration-backed and future specialties can plug into the same engine.")
     workflow = next(workflow for workflow in result.workflow_definitions if workflow.name == selected_workflow)
@@ -381,9 +495,9 @@ with tabs[4]:
     ]
     st.dataframe(stage_rows, use_container_width=True)
 
-with tabs[5]:
-    st.subheader("Acquisition Integration Simulator")
-    st.caption("Demonstrates how software creates value across acquisitions instead of acting as a standalone point tool.")
+with tabs[9]:
+    st.subheader("Acquisition Integration Center")
+    st.caption("Post-acquisition integration experience that translates workflow standardization into value creation.")
     col1, col2, col3 = st.columns(3)
     specialty = col1.selectbox("Specialty", portfolio["acquisition_defaults"]["specialties"], index=0)
     headcount = col2.slider("Headcount", min_value=15, max_value=150, value=75, step=5)
@@ -403,18 +517,23 @@ with tabs[5]:
     left.json(
         {
             "workflow_map": simulation["workflow_map"],
+            "current_state_assessment": simulation["current_state_assessment"],
             "operational_gaps": simulation["operational_gaps"],
-            "standardization_opportunities": simulation["standardization_opportunities"],
+            "operational_risks": simulation["operational_risks"],
+            "technology_gaps": simulation["technology_gaps"],
         }
     )
     right.json(
         {
-            "deployment_plan": simulation["deployment_plan"],
+            "standardization_opportunities": simulation["standardization_opportunities"],
+            "integration_plan": simulation["integration_plan"],
+            "ninety_day_roadmap": simulation["ninety_day_roadmap"],
+            "value_creation_opportunities": simulation["value_creation_opportunities"],
             "operating_model": simulation["operating_model"],
         }
     )
 
-with tabs[6]:
+with tabs[10]:
     st.subheader("Legacy Features")
     st.caption("Existing ASC RCM features remain in the system as workflow-supporting modules.")
     legacy_tabs = st.tabs(["Coding", "A/R", "Denials", "Workflow Assistant", "Payer Intelligence", "Case Detail"])

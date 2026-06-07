@@ -35,8 +35,15 @@ def test_pipeline_emits_portfolio_snapshot():
     result = run_pipeline()
 
     assert len(result.portfolio_snapshot["organizations"]) == 3
+    assert result.portfolio_snapshot["holdco"]["holdco_id"] == "holdco_citron"
+    assert "portfolio_revenue" in result.portfolio_snapshot["holdco_dashboard"]
+    assert result.portfolio_snapshot["value_creation_initiatives"]
+    assert result.portfolio_snapshot["portfolio_benchmarks"]["organizations"]
+    assert result.portfolio_snapshot["playbooks"]
+    assert result.portfolio_snapshot["executive_operating_review"]["month"] == "June 2026"
     assert result.portfolio_snapshot["monday_morning"]["title"] == "Monday Morning"
     assert result.portfolio_snapshot["role_views"]
+    assert result.portfolio_snapshot["organization_role_views"]
 
 
 def test_acquisition_simulator_returns_operator_plan():
@@ -49,5 +56,10 @@ def test_acquisition_simulator_returns_operator_plan():
 
     assert plan["specialty"] == "GI"
     assert plan["workflow_map"]
+    assert plan["current_state_assessment"]
+    assert plan["operational_risks"]
+    assert plan["technology_gaps"]
     assert plan["standardization_opportunities"]
+    assert plan["ninety_day_roadmap"]
+    assert plan["value_creation_opportunities"]
     assert plan["deployment_plan"]

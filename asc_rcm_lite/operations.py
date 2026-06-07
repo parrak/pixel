@@ -80,6 +80,18 @@ class Organization:
 
 
 @dataclass(frozen=True)
+class HoldCo:
+    holdco_id: str
+    name: str
+    thesis: str
+
+    def __post_init__(self) -> None:
+        require_non_empty(self.holdco_id, "HoldCo.holdco_id")
+        require_non_empty(self.name, "HoldCo.name")
+        require_non_empty(self.thesis, "HoldCo.thesis")
+
+
+@dataclass(frozen=True)
 class Facility:
     facility_id: str
     organization_id: str
@@ -128,6 +140,96 @@ class OperatorUser:
         require_non_empty(self.display_name, "OperatorUser.display_name")
         require_non_empty(self.role, "OperatorUser.role")
         require_non_empty(self.title, "OperatorUser.title")
+
+
+@dataclass(frozen=True)
+class ValueCreationInitiative:
+    initiative_id: str
+    name: str
+    owner_name: str
+    owner_title: str
+    target: str
+    current_state: str
+    expected_ebitda_impact: Decimal
+    realized_ebitda_impact: Decimal
+    status: str
+    timeline: str
+    organization_ids: tuple[str, ...]
+    workflow_ids: tuple[str, ...]
+    operational_link: str
+
+    def __post_init__(self) -> None:
+        require_non_empty(self.initiative_id, "ValueCreationInitiative.initiative_id")
+        require_non_empty(self.name, "ValueCreationInitiative.name")
+        require_non_empty(self.owner_name, "ValueCreationInitiative.owner_name")
+        require_non_empty(self.owner_title, "ValueCreationInitiative.owner_title")
+        require_non_empty(self.target, "ValueCreationInitiative.target")
+        require_non_empty(self.current_state, "ValueCreationInitiative.current_state")
+        require_non_empty(self.status, "ValueCreationInitiative.status")
+        require_non_empty(self.timeline, "ValueCreationInitiative.timeline")
+        require_non_empty(self.operational_link, "ValueCreationInitiative.operational_link")
+        if not self.organization_ids:
+            raise ValidationError("ValueCreationInitiative.organization_ids must not be empty")
+        if not self.workflow_ids:
+            raise ValidationError("ValueCreationInitiative.workflow_ids must not be empty")
+
+
+@dataclass(frozen=True)
+class PortfolioBenchmark:
+    metric_id: str
+    label: str
+    unit: str
+    organization_id: str
+    portfolio_average: Decimal
+    top_quartile: Decimal
+    best_in_class: Decimal
+    organization_value: Decimal
+    direction: str
+
+    def __post_init__(self) -> None:
+        require_non_empty(self.metric_id, "PortfolioBenchmark.metric_id")
+        require_non_empty(self.label, "PortfolioBenchmark.label")
+        require_non_empty(self.unit, "PortfolioBenchmark.unit")
+        require_non_empty(self.organization_id, "PortfolioBenchmark.organization_id")
+        require_non_empty(self.direction, "PortfolioBenchmark.direction")
+
+
+@dataclass(frozen=True)
+class PlaybookTask:
+    title: str
+    owner_role: str
+    dependency: str
+    expected_outcome: str
+    financial_impact: Decimal
+
+    def __post_init__(self) -> None:
+        require_non_empty(self.title, "PlaybookTask.title")
+        require_non_empty(self.owner_role, "PlaybookTask.owner_role")
+        require_non_empty(self.dependency, "PlaybookTask.dependency")
+        require_non_empty(self.expected_outcome, "PlaybookTask.expected_outcome")
+
+
+@dataclass(frozen=True)
+class OperatingPlaybook:
+    playbook_id: str
+    name: str
+    owner_title: str
+    focus: str
+    tasks: tuple[PlaybookTask, ...]
+    expected_outcomes: tuple[str, ...]
+    financial_impact: Decimal
+    historical_results: str
+
+    def __post_init__(self) -> None:
+        require_non_empty(self.playbook_id, "OperatingPlaybook.playbook_id")
+        require_non_empty(self.name, "OperatingPlaybook.name")
+        require_non_empty(self.owner_title, "OperatingPlaybook.owner_title")
+        require_non_empty(self.focus, "OperatingPlaybook.focus")
+        require_non_empty(self.historical_results, "OperatingPlaybook.historical_results")
+        if not self.tasks:
+            raise ValidationError("OperatingPlaybook.tasks must not be empty")
+        if not self.expected_outcomes:
+            raise ValidationError("OperatingPlaybook.expected_outcomes must not be empty")
 
 
 @dataclass(frozen=True)
@@ -537,8 +639,11 @@ def build_operational_dashboard(tasks: tuple[OperationalTask, ...]) -> dict[str,
 
 def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tuple[WorkflowDefinition, ...]) -> dict[str, object]:
     blueprint = _portfolio_blueprint()
+    holdco = blueprint["holdco"]
     organizations = blueprint["organizations"]
     users = blueprint["users"]
+    initiatives = _value_creation_initiatives()
+    playbooks = _operating_playbooks()
     role_views = []
 
     for role in ("manager", "denial_specialist", "biller", "coder", "auth_specialist"):
@@ -557,9 +662,33 @@ def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tupl
         )
 
     org_summaries = []
+    organization_role_views = []
     for organization in organizations:
         org_tasks = [task for task in tasks if task.organization_id == organization.organization_id]
         org_histories = [record for task in org_tasks for record in task.history]
+        org_role_views = [
+            {
+                "role": role,
+                "label": _role_label(role),
+                "queue_size": sum(1 for task in org_tasks if task.owner_role == role),
+                "revenue_at_risk": str(
+                    sum(
+                        (task.amount_at_risk or Decimal("0.00"))
+                        for task in org_tasks
+                        if task.owner_role == role
+                    )
+                ),
+                "completed_outcomes": sum(1 for record in org_histories if record.decision.actor_role == role),
+                "financial_result": str(
+                    sum(
+                        (record.outcome.financial_result or Decimal("0.00"))
+                        for record in org_histories
+                        if record.decision.actor_role == role
+                    )
+                ),
+            }
+            for role in ("manager", "denial_specialist", "biller", "coder", "auth_specialist")
+        ]
         org_summaries.append(
             {
                 "organization_id": organization.organization_id,
@@ -584,6 +713,13 @@ def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tupl
                     "urgent_tasks": sum(1 for task in org_tasks if task.priority_band == "urgent"),
                     "critical_workflows": sorted({task.workflow_name for task in org_tasks if task.priority_band == "urgent"}),
                 },
+            }
+        )
+        organization_role_views.append(
+            {
+                "organization_id": organization.organization_id,
+                "name": organization.name,
+                "roles": org_role_views,
             }
         )
 
@@ -621,7 +757,17 @@ def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tupl
         ],
     }
 
+    holdco_dashboard = _build_holdco_dashboard(tasks, org_summaries, initiatives)
+    benchmarking = _build_portfolio_benchmarks(tasks, org_summaries)
+    decision_intelligence = _build_decision_intelligence(tasks, initiatives, playbooks)
+    executive_review = _build_executive_review(holdco_dashboard, org_summaries, initiatives, benchmarking, decision_intelligence)
+
     return {
+        "holdco": {
+            "holdco_id": holdco.holdco_id,
+            "name": holdco.name,
+            "thesis": holdco.thesis,
+        },
         "organizations": [
             {
                 "organization_id": item.organization_id,
@@ -683,11 +829,56 @@ def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tupl
             for workflow in workflows
         ],
         "portfolio_metrics": build_operational_dashboard(tasks),
+        "holdco_dashboard": holdco_dashboard,
         "organization_summaries": org_summaries,
+        "organization_role_views": organization_role_views,
         "role_views": role_views,
         "monday_morning": monday_story,
+        "value_creation_initiatives": [
+            {
+                "initiative_id": item.initiative_id,
+                "name": item.name,
+                "owner_name": item.owner_name,
+                "owner_title": item.owner_title,
+                "target": item.target,
+                "current_state": item.current_state,
+                "expected_ebitda_impact": str(item.expected_ebitda_impact),
+                "realized_ebitda_impact": str(item.realized_ebitda_impact),
+                "status": item.status,
+                "timeline": item.timeline,
+                "organization_ids": list(item.organization_ids),
+                "workflow_ids": list(item.workflow_ids),
+                "operational_link": item.operational_link,
+            }
+            for item in initiatives
+        ],
+        "portfolio_benchmarks": benchmarking,
+        "playbooks": [
+            {
+                "playbook_id": item.playbook_id,
+                "name": item.name,
+                "owner_title": item.owner_title,
+                "focus": item.focus,
+                "tasks": [
+                    {
+                        "title": task.title,
+                        "owner_role": task.owner_role,
+                        "dependency": task.dependency,
+                        "expected_outcome": task.expected_outcome,
+                        "financial_impact": str(task.financial_impact),
+                    }
+                    for task in item.tasks
+                ],
+                "expected_outcomes": list(item.expected_outcomes),
+                "financial_impact": str(item.financial_impact),
+                "historical_results": item.historical_results,
+            }
+            for item in playbooks
+        ],
+        "decision_intelligence": decision_intelligence,
+        "executive_operating_review": executive_review,
         "acquisition_defaults": {
-            "specialties": ["ASC", "Ophthalmology", "GI", "Orthopedics"],
+            "specialties": ["ASC", "Ophthalmology", "GI", "Orthopedics", "Cardiology"],
             "workflow_maturity_levels": ["fragmented", "developing", "scaled"],
             "systems": ["EHR", "Practice Management", "Clearinghouse", "Payer Portals", "Spreadsheets"],
         },
@@ -704,11 +895,11 @@ def simulate_acquisition(*, specialty: str, headcount: int, workflow_maturity: s
         "scaled": "low",
     }.get(normalized_maturity, "medium")
     workflow_map = [
-        "Authorization intake",
-        "Coding review",
-        "Denial management",
-        "AR follow-up",
-        "Management review",
+        {"workflow": "Authorization intake", "maturity": workflow_maturity, "owner": "Authorization team"},
+        {"workflow": "Coding review", "maturity": workflow_maturity, "owner": "Coding team"},
+        {"workflow": "Denial management", "maturity": workflow_maturity, "owner": "Denials team"},
+        {"workflow": "AR follow-up", "maturity": workflow_maturity, "owner": "AR team"},
+        {"workflow": "Management review", "maturity": workflow_maturity, "owner": "Revenue leadership"},
     ]
     gaps = [
         f"{specialty} acquisition relies on disconnected operator handoffs across {len(systems)} systems.",
@@ -729,18 +920,67 @@ def simulate_acquisition(*, specialty: str, headcount: int, workflow_maturity: s
         "Import queue work into task -> recommendation -> decision -> outcome flows.",
         "Track financial result and resolution time to measure post-acquisition improvement.",
     ]
+    current_state_assessment = {
+        "operating_model": f"{specialty} work is managed with {workflow_maturity} workflow maturity across {headcount} operators.",
+        "systems_posture": f"{len(systems)} systems currently mediate operator work, with Citron positioned above them rather than replacing them.",
+        "leadership_risk": f"{maturity_gap.title()} risk that queue ownership and workflow accountability are inconsistent across the acquired business.",
+    }
+    operational_risks = [
+        "Queue aging is likely hidden inside payer portals and spreadsheet sidecars.",
+        "Decision latency will vary by team until standard workflow ownership is enforced.",
+        "Revenue leadership will struggle to connect workflow changes to EBITDA without explicit decision and outcome capture.",
+    ]
+    technology_gaps = [
+        "No unified operating layer for cross-system workflow routing.",
+        "Limited queue-level auditability for handoffs and escalations.",
+        "No shared decision memory to transfer knowledge across acquisitions.",
+    ]
+    roadmap = [
+        {"window": "Days 0-30", "focus": "Current-state workflow mapping and queue normalization"},
+        {"window": "Days 31-60", "focus": "Role assignment, playbook rollout, and operational KPI baselining"},
+        {"window": "Days 61-90", "focus": "Benchmarking, value-creation initiative launch, and executive operating review"},
+    ]
+    value_creation_opportunities = [
+        {
+            "initiative": "Workflow Standardization",
+            "expected_ebitda_impact": "180000.00" if maturity_gap == "high" else "95000.00",
+            "reason": "Consistent queue ownership reduces leakage and speeds resolution.",
+        },
+        {
+            "initiative": "Authorization Optimization",
+            "expected_ebitda_impact": "110000.00",
+            "reason": "Fewer preventable denials improves recoverability and accelerates cash conversion.",
+        },
+        {
+            "initiative": "Productivity Improvements",
+            "expected_ebitda_impact": "85000.00",
+            "reason": "Standard roles and reusable playbooks increase revenue per employee.",
+        },
+    ]
     return {
         "specialty": specialty,
         "headcount": headcount,
         "workflow_maturity": workflow_maturity,
         "systems": list(systems),
         "workflow_map": workflow_map,
+        "current_state_assessment": current_state_assessment,
         "operational_gaps": gaps,
+        "operational_risks": operational_risks,
+        "technology_gaps": technology_gaps,
         "standardization_opportunities": opportunities,
+        "integration_plan": deployment_plan,
+        "ninety_day_roadmap": roadmap,
+        "value_creation_opportunities": value_creation_opportunities,
         "deployment_plan": deployment_plan,
         "operating_model": {
             "integration_layer": sorted(set(systems)),
-            "citron_layers": ["Workflow Engine", "Decision Memory", "Portfolio Rollup", "Operator Queues"],
+            "citron_layers": [
+                "Workflow Engine",
+                "Decision Memory",
+                "Portfolio Rollup",
+                "Value Creation System",
+                "Operator Queues",
+            ],
             "value_thesis": "Software increases value by standardizing operators across acquisitions rather than replacing systems of record.",
         },
     }
@@ -836,6 +1076,11 @@ def _build_task_history(
 
 
 def _portfolio_blueprint() -> dict[str, object]:
+    holdco = HoldCo(
+        "holdco_citron",
+        "Citron Specialty RCM Platform",
+        "Acquire specialty RCM operators, standardize workflow, compound knowledge, and expand enterprise value.",
+    )
     organizations = (
         Organization("org_alpha", "ASC Alpha", "ASC", "Standardize denial and AR execution first."),
         Organization("org_bravo", "ASC Bravo", "ASC", "Tighten coding and charge capture throughput."),
@@ -891,6 +1136,7 @@ def _portfolio_blueprint() -> dict[str, object]:
         "ASC-CASE-008": {"organization_id": "org_charlie", "organization_name": "ASC Charlie", "facility_id": "fac_charlie", "facility_name": "ASC Charlie Outpatient Center"},
     }
     return {
+        "holdco": holdco,
         "organizations": organizations,
         "facilities": facilities,
         "teams": teams,
@@ -990,6 +1236,443 @@ def _outcome_status(workflow_id: str) -> str:
 
 def _titleize(value: str) -> str:
     return value.replace("_", " ").title()
+
+
+def _value_creation_initiatives() -> tuple[ValueCreationInitiative, ...]:
+    return (
+        ValueCreationInitiative(
+            "init_coding_automation",
+            "Coding Automation",
+            "Alicia Monroe",
+            "Regional VP Revenue Cycle",
+            "Reduce manual coding review load by 18%",
+            "Bravo coding and charge capture queues are standardized, but throughput variance remains above target.",
+            Decimal("180000.00"),
+            Decimal("64000.00"),
+            "in_flight",
+            "Q3 FY26",
+            ("org_bravo",),
+            ("asc_coding_review", "asc_charge_capture"),
+            "Raise coder productivity and recover missed implant charges faster.",
+        ),
+        ValueCreationInitiative(
+            "init_denial_reduction",
+            "Denial Reduction",
+            "Morgan Lee",
+            "VP Revenue Cycle",
+            "Reduce preventable denial rate below 6.0%",
+            "Alpha denial work is recoverable, but prior-auth leakage still drives urgent assignments.",
+            Decimal("225000.00"),
+            Decimal("92000.00"),
+            "in_flight",
+            "Q3 FY26",
+            ("org_alpha",),
+            ("asc_denial_review", "asc_authorization"),
+            "Lower avoidable rework and improve near-term cash recovery.",
+        ),
+        ValueCreationInitiative(
+            "init_auth_optimization",
+            "Authorization Optimization",
+            "Grace Lin",
+            "Authorization Lead",
+            "Cut authorization cycle time to under 20 hours",
+            "Authorization work is documented, but portfolio variance is still too wide.",
+            Decimal("140000.00"),
+            Decimal("51000.00"),
+            "scaling",
+            "Q4 FY26",
+            ("org_alpha", "org_charlie"),
+            ("asc_authorization",),
+            "Reduce preventable denials before they hit AR and appeals queues.",
+        ),
+        ValueCreationInitiative(
+            "init_offshore_migration",
+            "Offshore Migration",
+            "Sonia Clarke",
+            "Portfolio Operations Director",
+            "Move low-variance AR follow-up work into standardized pods",
+            "Charlie has enough repeatable AR work to absorb a shared-service model after queue cleanup.",
+            Decimal("120000.00"),
+            Decimal("0.00"),
+            "planned",
+            "Q1 FY27",
+            ("org_charlie",),
+            ("asc_ar_followup",),
+            "Lower cost to serve without losing queue accountability.",
+        ),
+        ValueCreationInitiative(
+            "init_workflow_standardization",
+            "Workflow Standardization",
+            "Sonia Clarke",
+            "Portfolio Operations Director",
+            "Run every acquired operator on one workflow taxonomy",
+            "Cross-portfolio workflow definitions are live, but playbook adoption is mid-rollout.",
+            Decimal("260000.00"),
+            Decimal("118000.00"),
+            "in_flight",
+            "Q3 FY26",
+            ("org_alpha", "org_bravo", "org_charlie"),
+            ("asc_authorization", "asc_denial_review", "asc_ar_followup", "asc_charge_capture", "asc_coding_review"),
+            "Create comparable queue ownership, decision memory, and operating reviews across the platform.",
+        ),
+        ValueCreationInitiative(
+            "init_contract_optimization",
+            "Contract Optimization",
+            "Daniel Ortiz",
+            "AR Excellence Lead",
+            "Improve underpayment recovery discipline",
+            "Underpayment follow-up is consistent but still fragmented by payer workflow.",
+            Decimal("90000.00"),
+            Decimal("28000.00"),
+            "planned",
+            "Q4 FY26",
+            ("org_charlie", "org_alpha"),
+            ("asc_ar_followup",),
+            "Turn payer-specific recovery tactics into reusable operating knowledge.",
+        ),
+        ValueCreationInitiative(
+            "init_productivity_improvements",
+            "Productivity Improvements",
+            "Morgan Lee",
+            "VP Revenue Cycle",
+            "Increase revenue per employee across the portfolio",
+            "Leadership can now see workload and outcomes, but staffing leverage is not yet uniform.",
+            Decimal("210000.00"),
+            Decimal("76000.00"),
+            "in_flight",
+            "Q4 FY26",
+            ("org_alpha", "org_bravo", "org_charlie"),
+            ("asc_denial_review", "asc_ar_followup", "asc_coding_review"),
+            "Connect operator throughput improvements to EBITDA expansion.",
+        ),
+    )
+
+
+def _operating_playbooks() -> tuple[OperatingPlaybook, ...]:
+    return (
+        OperatingPlaybook(
+            "playbook_asc_integration",
+            "ASC Integration",
+            "Portfolio Operations Director",
+            "Stand up a newly acquired ASC operator inside Citron within 90 days.",
+            (
+                PlaybookTask("Map current workflow lanes", "manager", "Acquisition close", "Current-state queue map completed", Decimal("25000.00")),
+                PlaybookTask("Assign facility teams", "manager", "Workflow map", "Named owners for each queue", Decimal("18000.00")),
+                PlaybookTask("Normalize denial and AR queues", "denial_specialist", "Team assignment", "Urgent backlog visible in one operating view", Decimal("42000.00")),
+            ),
+            ("Faster post-close standardization", "Comparable operator metrics across the platform"),
+            Decimal("145000.00"),
+            "Reduced time-to-standardization across the last two synthetic acquisitions.",
+        ),
+        OperatingPlaybook(
+            "playbook_denial_excellence",
+            "Denial Excellence",
+            "VP Revenue Cycle",
+            "Reduce avoidable denials and compress appeal cycle times.",
+            (
+                PlaybookTask("Triage urgent appeal deadlines", "denial_specialist", "Daily queue refresh", "High-risk denials assigned within the SLA", Decimal("38000.00")),
+                PlaybookTask("Link denial root causes to auth workflow", "auth_specialist", "Appeal path documented", "Preventable denial loops shrink over time", Decimal("27000.00")),
+            ),
+            ("Lower denial rate", "Higher recoverability on denied claims"),
+            Decimal("132000.00"),
+            "Synthetic portfolio shows fewer urgent escalations where this playbook is applied first.",
+        ),
+        OperatingPlaybook(
+            "playbook_coding_excellence",
+            "Coding Excellence",
+            "Coding Director",
+            "Improve coding throughput and capture missed revenue before billing.",
+            (
+                PlaybookTask("Prioritize high-impact coding variance", "coder", "Daily coding queue", "High-dollar issues reviewed first", Decimal("22000.00")),
+                PlaybookTask("Validate implant charge support", "coder", "Supply log reconciliation", "Missed charge capture declines", Decimal("19000.00")),
+            ),
+            ("Higher coder productivity", "Lower pre-bill leakage"),
+            Decimal("98000.00"),
+            "Charge capture variance narrows fastest in organizations following the shared review sequence.",
+        ),
+        OperatingPlaybook(
+            "playbook_authorization_excellence",
+            "Authorization Excellence",
+            "Authorization Lead",
+            "Reduce preventable denials by tightening pre-service authorization workflow.",
+            (
+                PlaybookTask("Review auth deficiencies before service", "auth_specialist", "Scheduling handoff", "Fewer missing-auth denials downstream", Decimal("26000.00")),
+                PlaybookTask("Escalate payers with repeated delays", "auth_specialist", "Cycle-time outlier detected", "Cycle time variance declines", Decimal("14000.00")),
+            ),
+            ("Lower auth cycle time", "Less preventable revenue risk"),
+            Decimal("104000.00"),
+            "Authorization cycle time improves when remediation steps are standardized across facilities.",
+        ),
+        OperatingPlaybook(
+            "playbook_manager_review",
+            "Manager Operating Review",
+            "Operating Partner",
+            "Run a weekly management cadence tied to financial and operational outcomes.",
+            (
+                PlaybookTask("Review portfolio bottlenecks", "manager", "Updated holdco dashboard", "Leadership focuses on the highest-leverage constraints", Decimal("12000.00")),
+                PlaybookTask("Approve initiative owners and next actions", "manager", "Benchmark variance reviewed", "Value creation plans stay accountable", Decimal("16000.00")),
+            ),
+            ("Clear executive focus", "Faster escalation on underperforming workflows"),
+            Decimal("76000.00"),
+            "Organizations with a consistent operating review show tighter queue discipline.",
+        ),
+        OperatingPlaybook(
+            "playbook_revenue_recovery",
+            "Revenue Recovery",
+            "AR Excellence Lead",
+            "Recover aged AR and underpayments with explicit queue ownership.",
+            (
+                PlaybookTask("Work 120+ day accounts first", "biller", "Aging snapshot refreshed", "Highest-risk dollars receive attention first", Decimal("31000.00")),
+                PlaybookTask("Document payer follow-up outcomes", "biller", "Touch completed", "Recovery tactics become reusable decision memory", Decimal("15000.00")),
+            ),
+            ("Higher recovery rate", "Improved cash conversion on aged balances"),
+            Decimal("118000.00"),
+            "Historical results improve when account prioritization is combined with shared payer tactics.",
+        ),
+    )
+
+
+def _build_holdco_dashboard(
+    tasks: tuple[OperationalTask, ...],
+    org_summaries: list[dict[str, object]],
+    initiatives: tuple[ValueCreationInitiative, ...],
+) -> dict[str, object]:
+    annualized_revenue = Decimal("18450000.00")
+    ebitda = Decimal("4180000.00")
+    completed_histories = [record for task in tasks for record in task.history]
+    total_financial_result = sum((record.outcome.financial_result or Decimal("0.00") for record in completed_histories), Decimal("0.00"))
+    expected_impact = sum((item.expected_ebitda_impact for item in initiatives), Decimal("0.00"))
+    realized_impact = sum((item.realized_ebitda_impact for item in initiatives), Decimal("0.00"))
+    urgent_tasks = [task for task in tasks if task.priority_band == "urgent"]
+    workflow_counts = build_operational_dashboard(tasks)["workflow_counts"]
+    busiest_workflow_count = max(workflow_counts.values() or [0])
+    bottlenecks = [name for name, count in workflow_counts.items() if count == busiest_workflow_count and count > 0]
+    return {
+        "portfolio_revenue": str(annualized_revenue),
+        "portfolio_ebitda": str(ebitda),
+        "revenue_at_risk": str(sum((task.amount_at_risk or Decimal("0.00") for task in tasks), Decimal("0.00"))),
+        "open_work": sum(1 for task in tasks if task.status != "completed"),
+        "critical_bottlenecks": bottlenecks,
+        "productivity_trends": {
+            "documented_outcomes": len(completed_histories),
+            "realized_financial_result": str(total_financial_result),
+            "revenue_per_employee": "410000.00",
+            "coder_productivity_delta_pct": "9.4",
+        },
+        "portfolio_health": {
+            "healthy_orgs": sum(1 for summary in org_summaries if summary["operational_health"]["urgent_tasks"] <= 1),
+            "watchlist_orgs": [summary["name"] for summary in org_summaries if summary["operational_health"]["urgent_tasks"] > 1],
+        },
+        "operational_risks": [
+            "ASC Alpha still concentrates urgent denial value in a small set of cases.",
+            "ASC Charlie aging AR remains above target until shared-service cleanup is complete.",
+            "Workflow standardization is live, but playbook adherence is not uniform across organizations.",
+        ],
+        "value_creation_progress": {
+            "expected_ebitda_impact": str(expected_impact),
+            "realized_ebitda_impact": str(realized_impact),
+            "progress_pct": str(round((realized_impact / expected_impact) * Decimal("100"), 1) if expected_impact else Decimal("0.0")),
+        },
+        "recent_acquisitions": [
+            {"name": "ASC Bravo", "close_date": "2026-02-14", "integration_status": "playbooks live"},
+            {"name": "ASC Charlie", "close_date": "2026-04-03", "integration_status": "benchmarking baseline complete"},
+        ],
+        "focus_today": [
+            "Protect near-term recovery by clearing urgent denial and authorization work at ASC Alpha.",
+            "Push coding automation and charge capture standardization further at ASC Bravo.",
+            "Reduce 120+ day AR exposure at ASC Charlie before launching shared-service migration.",
+        ],
+        "enterprise_value_flow": [
+            "Acquisition",
+            "Standardization",
+            "Operational Improvement",
+            "Knowledge Compounding",
+            "EBITDA Expansion",
+            "Enterprise Value Creation",
+        ],
+    }
+
+
+def _build_portfolio_benchmarks(tasks: tuple[OperationalTask, ...], org_summaries: list[dict[str, object]]) -> dict[str, object]:
+    metric_templates = (
+        ("collection_rate", "Collection Rate", "%", "higher_better"),
+        ("denial_rate", "Denial Rate", "%", "lower_better"),
+        ("ar_aging", "AR Aging", "days", "lower_better"),
+        ("coder_productivity", "Coder Productivity", "claims/day", "higher_better"),
+        ("authorization_cycle_time", "Authorization Cycle Time", "hours", "lower_better"),
+        ("revenue_per_employee", "Revenue Per Employee", "$", "higher_better"),
+        ("margin", "Margin", "%", "higher_better"),
+        ("recovery_rate", "Recovery Rate", "%", "higher_better"),
+    )
+    values_by_org = {
+        "org_alpha": {
+            "collection_rate": Decimal("96.8"),
+            "denial_rate": Decimal("7.1"),
+            "ar_aging": Decimal("39.0"),
+            "coder_productivity": Decimal("18.5"),
+            "authorization_cycle_time": Decimal("22.0"),
+            "revenue_per_employee": Decimal("402000.00"),
+            "margin": Decimal("22.0"),
+            "recovery_rate": Decimal("72.0"),
+        },
+        "org_bravo": {
+            "collection_rate": Decimal("97.9"),
+            "denial_rate": Decimal("5.8"),
+            "ar_aging": Decimal("31.0"),
+            "coder_productivity": Decimal("21.4"),
+            "authorization_cycle_time": Decimal("18.0"),
+            "revenue_per_employee": Decimal("428000.00"),
+            "margin": Decimal("24.2"),
+            "recovery_rate": Decimal("78.0"),
+        },
+        "org_charlie": {
+            "collection_rate": Decimal("95.4"),
+            "denial_rate": Decimal("6.6"),
+            "ar_aging": Decimal("52.0"),
+            "coder_productivity": Decimal("17.2"),
+            "authorization_cycle_time": Decimal("24.0"),
+            "revenue_per_employee": Decimal("389000.00"),
+            "margin": Decimal("20.5"),
+            "recovery_rate": Decimal("69.0"),
+        },
+    }
+    org_rows = []
+    for summary in org_summaries:
+        organization_id = summary["organization_id"]
+        benchmarks = []
+        for metric_id, label, unit, direction in metric_templates:
+            org_value = values_by_org[organization_id][metric_id]
+            peer_values = [entry[metric_id] for entry in values_by_org.values()]
+            portfolio_average = _quantize_amount(sum(peer_values, Decimal("0.00")) / Decimal(str(len(peer_values))))
+            top_quartile = max(peer_values) if direction == "higher_better" else min(peer_values)
+            best_in_class = (top_quartile + portfolio_average) / Decimal("2") if direction == "higher_better" else (top_quartile + min(peer_values)) / Decimal("2")
+            benchmark = PortfolioBenchmark(
+                metric_id,
+                label,
+                unit,
+                organization_id,
+                portfolio_average,
+                _quantize_amount(top_quartile),
+                _quantize_amount(best_in_class),
+                org_value,
+                direction,
+            )
+            benchmarks.append(
+                {
+                    "metric_id": benchmark.metric_id,
+                    "label": benchmark.label,
+                    "unit": benchmark.unit,
+                    "organization_value": str(benchmark.organization_value),
+                    "portfolio_average": str(benchmark.portfolio_average),
+                    "top_quartile": str(benchmark.top_quartile),
+                    "best_in_class": str(benchmark.best_in_class),
+                    "direction": benchmark.direction,
+                    "variance_to_average": str(_quantize_amount(benchmark.organization_value - benchmark.portfolio_average)),
+                }
+            )
+        org_rows.append(
+            {
+                "organization_id": organization_id,
+                "name": summary["name"],
+                "benchmarks": benchmarks,
+            }
+        )
+    return {
+        "metrics": [label for _, label, _, _ in metric_templates],
+        "organizations": org_rows,
+        "narrative": "Portfolio variance is visible so leadership can copy what works and intervene where operators are drifting.",
+    }
+
+
+def _build_decision_intelligence(
+    tasks: tuple[OperationalTask, ...],
+    initiatives: tuple[ValueCreationInitiative, ...],
+    playbooks: tuple[OperatingPlaybook, ...],
+) -> dict[str, object]:
+    records = [record for task in tasks for record in task.history]
+    realized = sum((record.outcome.financial_result or Decimal("0.00") for record in records), Decimal("0.00"))
+    avg_resolution = round(sum(record.outcome.resolution_time_hours or 0 for record in records) / max(len(records), 1), 1)
+    return {
+        "summary": {
+            "recommendations_logged": len(tasks),
+            "decisions_logged": len(records),
+            "outcomes_logged": len(records),
+            "financial_result": str(realized),
+            "average_resolution_hours": avg_resolution,
+        },
+        "what_works": [
+            "Denial and authorization decisions with explicit ownership resolve fastest in the synthetic portfolio.",
+            "AR follow-up recommendations tied to clear escalation criteria create the highest immediate cash recovery.",
+            "Playbooks that sequence queue triage before specialist execution reduce operational variance.",
+        ],
+        "what_fails": [
+            "Spreadsheet-mediated queue management obscures urgency and delays human decisions.",
+            "Workflows without named owners create slower resolution times and weaker financial results.",
+        ],
+        "patterns": [
+            {
+                "organization": task.organization_name,
+                "workflow": task.workflow_name,
+                "playbook": playbooks[len(task.task_id) % len(playbooks)].name,
+                "initiative": initiatives[len(task.task_id) % len(initiatives)].name,
+                "decision": task.history[0].decision.decision,
+                "owner": task.history[0].decision.actor_name,
+                "outcome": task.history[0].outcome.status,
+                "financial_result": str(task.history[0].outcome.financial_result or Decimal("0.00")),
+                "resolution_time_hours": task.history[0].outcome.resolution_time_hours,
+            }
+            for task in tasks[:8]
+            if task.history
+        ],
+    }
+
+
+def _build_executive_review(
+    holdco_dashboard: dict[str, object],
+    org_summaries: list[dict[str, object]],
+    initiatives: tuple[ValueCreationInitiative, ...],
+    benchmarking: dict[str, object],
+    decision_intelligence: dict[str, object],
+) -> dict[str, object]:
+    weakest_org = max(org_summaries, key=lambda item: item["aging"]["120_plus"])
+    strongest_org = max(org_summaries, key=lambda item: Decimal(item["productivity"]["financial_result"]))
+    return {
+        "month": "June 2026",
+        "executive_summary": [
+            "The portfolio is standardizing around one workflow model, with HoldCo visibility now linking operations to EBITDA.",
+            "Value creation is concentrated in denial reduction, workflow standardization, and productivity improvements.",
+            "Leadership attention should stay on Alpha denial urgency and Charlie aging AR while Bravo scales coding throughput gains.",
+        ],
+        "financial_performance": {
+            "portfolio_revenue": holdco_dashboard["portfolio_revenue"],
+            "portfolio_ebitda": holdco_dashboard["portfolio_ebitda"],
+            "revenue_at_risk": holdco_dashboard["revenue_at_risk"],
+            "realized_financial_result": decision_intelligence["summary"]["financial_result"],
+        },
+        "operational_performance": {
+            "open_work": holdco_dashboard["open_work"],
+            "critical_bottlenecks": holdco_dashboard["critical_bottlenecks"],
+            "top_org": strongest_org["name"],
+            "watchlist_org": weakest_org["name"],
+        },
+        "risks": holdco_dashboard["operational_risks"],
+        "wins": [
+            f"{strongest_org['name']} is converting the highest documented financial result in the portfolio.",
+            "Workflow definitions and decision memory are now reusable across all active organizations.",
+            "Value creation initiatives have a visible realized EBITDA impact instead of only a roadmap hypothesis.",
+        ],
+        "required_decisions": [
+            "Approve shared-service AR migration after Charlie backlog drops below target.",
+            "Fund the next wave of coding automation once Bravo playbook adherence is stable.",
+            "Decide whether denial-reduction playbooks should become mandatory at every new acquisition close.",
+        ],
+        "value_creation_progress": {
+            "expected_ebitda_impact": holdco_dashboard["value_creation_progress"]["expected_ebitda_impact"],
+            "realized_ebitda_impact": holdco_dashboard["value_creation_progress"]["realized_ebitda_impact"],
+            "active_initiatives": sum(1 for item in initiatives if item.status in {"in_flight", "scaling"}),
+        },
+        "benchmark_excerpt": benchmarking["organizations"][0]["benchmarks"][:3],
+    }
 
 
 def _parse_date(value: str) -> date:

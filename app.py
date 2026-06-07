@@ -90,13 +90,15 @@ def _serialize_case(case_result) -> dict[str, object]:
 def _landing_page() -> str:
     result = _load_result()
     portfolio = result.portfolio_snapshot
+    holdco = portfolio["holdco"]
+    holdco_dashboard = portfolio["holdco_dashboard"]
     logo = _logo_svg()
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Citron Health Operator OS</title>
+  <title>Citron Health HoldCo Command Center</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     :root {{
@@ -182,30 +184,30 @@ def _landing_page() -> str:
         <div class="brand-mark">{logo}</div>
         <div class="brand-wordmark">
           <div class="brand-title">Citron<b> Health</b></div>
-          <div class="brand-subtitle">Operator Operating System</div>
+          <div class="brand-subtitle">HoldCo Command Center</div>
         </div>
       </div>
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:var(--pine-600);font-size:.88rem;font-weight:700;">Citron Health Phase 3</div>
-      <h1 style="font-size:clamp(2.4rem,5vw,4.8rem);line-height:.95;margin:.4rem 0 1rem;">Operator Operating System for Specialty Revenue Cycle</h1>
-      <p>Citron exists to make acquired specialty RCM businesses better operators. The software sits above EHRs, PM systems, payer portals, and clearinghouses to standardize task ownership, human decision-making, and outcome tracking across a portfolio.</p>
-      <p>The product is no longer centered on coding review or denial review. Those remain inside the system as features, while the operating model centers on organization, facility, team, user, workflow, task, recommendation, decision, and outcome.</p>
-      <a class="button primary" href="/demo">Open Operator Demo</a>
+      <div style="text-transform:uppercase;letter-spacing:.08em;color:var(--pine-600);font-size:.88rem;font-weight:700;">Citron Health Phase 4</div>
+      <h1 style="font-size:clamp(2.4rem,5vw,4.8rem);line-height:.95;margin:.4rem 0 1rem;">HoldCo Command Center for Specialty Revenue Cycle</h1>
+      <p>{escape(holdco["thesis"])}</p>
+      <p>Citron sits above EHRs, PM systems, payer portals, and clearinghouses to standardize acquired operators, turn workflow changes into EBITDA, and compound reusable knowledge across the portfolio.</p>
+      <a class="button primary" href="/demo">Open HoldCo Demo</a>
       <a class="button" href="/api/summary">View Portfolio Summary</a>
     </section>
     <section class="grid">
-      <article class="metric"><div>Organizations</div><strong>{len(portfolio["organizations"])}</strong></article>
-      <article class="metric"><div>Revenue at risk</div><strong>${escape(portfolio["portfolio_metrics"]["revenue_at_risk"])}</strong></article>
-      <article class="metric"><div>Open work</div><strong>{escape(str(portfolio["portfolio_metrics"]["open_work"]))}</strong></article>
-      <article class="metric"><div>Recovery pipeline</div><strong>${escape(portfolio["portfolio_metrics"]["recovery_pipeline"])}</strong></article>
+      <article class="metric"><div>Portfolio revenue</div><strong>${escape(holdco_dashboard["portfolio_revenue"])}</strong></article>
+      <article class="metric"><div>Portfolio EBITDA</div><strong>${escape(holdco_dashboard["portfolio_ebitda"])}</strong></article>
+      <article class="metric"><div>Revenue at risk</div><strong>${escape(holdco_dashboard["revenue_at_risk"])}</strong></article>
+      <article class="metric"><div>Open work</div><strong>{escape(str(holdco_dashboard["open_work"]))}</strong></article>
     </section>
     <section class="panel" style="margin-top:18px;">
-      <h2>What Phase 3 adds</h2>
+      <h2>What Phase 4 adds</h2>
       <ul>
-        <li>Portfolio view for ASC Alpha, ASC Bravo, and ASC Charlie</li>
-        <li>Decision memory with financial result and resolution time</li>
-        <li>Config-backed workflow definition engine</li>
-        <li>Monday morning executive operating narrative</li>
-        <li>Acquisition integration simulator</li>
+        <li>HoldCo dashboard for portfolio revenue, EBITDA, bottlenecks, and operating risk</li>
+        <li>Value creation system tied to expected and realized EBITDA impact</li>
+        <li>Portfolio benchmarking and reusable operating playbooks</li>
+        <li>Executive operating review with risks, wins, and required decisions</li>
+        <li>Acquisition integration center tied to standardization and enterprise value</li>
       </ul>
     </section>
   </main>
@@ -218,6 +220,8 @@ def _demo_page(selected_case_id: str | None = None) -> str:
     result = _load_result()
     portfolio = result.portfolio_snapshot
     monday = portfolio["monday_morning"]
+    holdco_dashboard = portfolio["holdco_dashboard"]
+    executive_review = portfolio["executive_operating_review"]
     selected = _selected_case(selected_case_id)
     selected_task = selected.operational_tasks[0]
     logo = _logo_svg()
@@ -234,7 +238,7 @@ def _demo_page(selected_case_id: str | None = None) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Citron Health Operator Demo</title>
+  <title>Citron Health HoldCo Demo</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     :root {{
@@ -318,19 +322,19 @@ def _demo_page(selected_case_id: str | None = None) -> str:
         <div class="brand-mark">{logo}</div>
         <div class="brand-wordmark">
           <div class="brand-title">Citron<b> Health</b></div>
-          <div class="brand-subtitle">Operator Operating System</div>
+          <div class="brand-subtitle">HoldCo Command Center</div>
         </div>
       </div>
       <span class="pill">Synthetic data only. Human review required. No autonomous workflows.</span>
-      <h1 style="margin:.75rem 0 1rem;">Monday Morning inside Citron</h1>
-      <p>{escape(monday['vp_user']['display_name'])}, {escape(monday['vp_user']['title'])}, opens Citron and sees a portfolio operating system rather than a detector screen.</p>
-      <ul>{"".join(f"<li>{escape(line)}</li>" for line in monday["executive_brief"])}</ul>
+      <h1 style="margin:.75rem 0 1rem;">HoldCo Command Center inside Citron</h1>
+      <p>{escape(monday['vp_user']['display_name'])}, {escape(monday['vp_user']['title'])}, opens Citron and sees a portfolio value-creation system rather than a detector screen.</p>
+      <ul>{"".join(f"<li>{escape(line)}</li>" for line in holdco_dashboard["focus_today"])}</ul>
     </section>
     <section class="grid">
-      <article class="card"><div>Revenue at risk</div><h2>${escape(portfolio["portfolio_metrics"]["revenue_at_risk"])}</h2></article>
-      <article class="card"><div>Open tasks</div><h2>{escape(str(portfolio["portfolio_metrics"]["open_work"]))}</h2></article>
-      <article class="card"><div>Workflow bottlenecks</div><h2>{escape(", ".join(monday["workflow_bottlenecks"]))}</h2></article>
-      <article class="card"><div>Critical work</div><h2>{escape(str(len(monday["critical_work"])))}</h2></article>
+      <article class="card"><div>Portfolio revenue</div><h2>${escape(holdco_dashboard["portfolio_revenue"])}</h2></article>
+      <article class="card"><div>Portfolio EBITDA</div><h2>${escape(holdco_dashboard["portfolio_ebitda"])}</h2></article>
+      <article class="card"><div>Value creation progress</div><h2>{escape(str(holdco_dashboard["value_creation_progress"]["progress_pct"]))}%</h2></article>
+      <article class="card"><div>Critical bottlenecks</div><h2>{escape(", ".join(holdco_dashboard["critical_bottlenecks"]))}</h2></article>
     </section>
     <section class="two-col">
       <article class="card">
@@ -351,7 +355,12 @@ def _demo_page(selected_case_id: str | None = None) -> str:
       </article>
     </section>
     <section class="card" style="margin-top:18px;">
-      <h2>Decision memory</h2>
+      <h2>Executive operating review</h2>
+      <p><strong>Month:</strong> {escape(executive_review["month"])}</p>
+      <p><strong>Required decisions:</strong> {escape(" | ".join(executive_review["required_decisions"]))}</p>
+    </section>
+    <section class="card" style="margin-top:18px;">
+      <h2>Decision intelligence</h2>
       <table>
         <thead><tr><th>Actor</th><th>Decision</th><th>Outcome</th><th>Financial result</th><th>Resolution hours</th></tr></thead>
         <tbody>{history_rows}</tbody>
@@ -385,6 +394,20 @@ def app(environ, start_response):
     if path == "/api/portfolio":
         return _json_response(start_response, result.portfolio_snapshot)
 
+    if path == "/api/holdco":
+        return _json_response(
+            start_response,
+            {
+                "holdco": result.portfolio_snapshot["holdco"],
+                "holdco_dashboard": result.portfolio_snapshot["holdco_dashboard"],
+                "value_creation_initiatives": result.portfolio_snapshot["value_creation_initiatives"],
+                "portfolio_benchmarks": result.portfolio_snapshot["portfolio_benchmarks"],
+                "playbooks": result.portfolio_snapshot["playbooks"],
+                "executive_operating_review": result.portfolio_snapshot["executive_operating_review"],
+                "decision_intelligence": result.portfolio_snapshot["decision_intelligence"],
+            },
+        )
+
     if path == "/api/case":
         case_id = query.get("case_id", [None])[0]
         if not case_id:
@@ -398,7 +421,7 @@ def app(environ, start_response):
         specialty = query.get("specialty", ["ASC"])[0]
         headcount = int(query.get("headcount", ["75"])[0])
         maturity = query.get("workflow_maturity", ["developing"])[0]
-        systems = tuple(query.get("systems", ["EHR", "Practice Management", "Clearinghouse", "Payer Portals"]))
+        systems = tuple(query.get("systems", ["EHR", "Practice Management", "Clearinghouse", "Payer Portals", "Spreadsheets"]))
         return _json_response(
             start_response,
             simulate_acquisition(

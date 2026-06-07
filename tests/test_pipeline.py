@@ -39,6 +39,7 @@ def test_pipeline_includes_operational_metrics_and_workflow_definitions():
     assert "revenue_at_risk" in result.operational_metrics
     assert result.workflow_definitions
     assert result.portfolio_snapshot
+    assert result.portfolio_snapshot["decision_intelligence"]["patterns"]
 
 
 def test_case_pipeline_results_include_operational_tasks():

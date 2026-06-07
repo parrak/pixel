@@ -1,99 +1,3 @@
-const demoData = {
-  portfolioMetrics: {
-    revenueAtRisk: "$184,435",
-    openWork: 10,
-    recoveryPipeline: "$156,715",
-    productivity: "5 documented outcomes",
-  },
-  mondayMorning: {
-    vp: "Morgan Lee, VP Revenue Cycle, opens Citron and sees portfolio health rather than detector screens.",
-    brief: [
-      "Revenue at risk is concentrated in denials and aging AR across ASC Alpha.",
-      "Charge capture and authorization queues are still within service levels.",
-      "The operating system recommends denial and AR assignment first because they hold the highest recoverable value.",
-    ],
-  },
-  organizations: [
-    {
-      id: "org_alpha",
-      name: "ASC Alpha",
-      summary: "Highest recoverable denial value in the portfolio.",
-      roles: [
-        {
-          role: "VP Revenue Cycle",
-          queue: 2,
-          task: "Reassign urgent denial and aging AR work",
-          recommendation: "Assign denial and AR queues first to preserve near-term recovery.",
-          decision: "Morgan Lee assigned the denial deadline task to Jasmine Brooks and the high-dollar AR task to Daniel Ortiz.",
-          outcome: "Morning assignments clarified queue ownership and exposed the top workflow bottleneck.",
-        },
-        {
-          role: "Denial Specialist",
-          queue: 1,
-          task: "Prior authorization denial at deadline",
-          recommendation: "Initiate retro authorization remediation with cited denial evidence.",
-          decision: "Jasmine Brooks approved the recommendation and moved the workflow into remediation.",
-          outcome: "Appeal path documented. Financial result expected: $1,152. Resolution time target: 18 hours.",
-        },
-        {
-          role: "AR Specialist",
-          queue: 1,
-          task: "High-dollar orthopedic AR follow-up",
-          recommendation: "Advance payer follow-up and escalate if unresolved by next touch.",
-          decision: "Daniel Ortiz approved follow-up and documented escalation criteria.",
-          outcome: "Follow-up completed. Financial result expected: $7,680. Resolution time target: 42 hours.",
-        },
-        {
-          role: "Coding Specialist",
-          queue: 0,
-          task: "No critical Alpha coding work this morning",
-          recommendation: "Monitor the portfolio and absorb overflow if denials resolve early.",
-          decision: "Coding queue held in reserve for overflow support.",
-          outcome: "No immediate action required.",
-        },
-        {
-          role: "Authorization Specialist",
-          queue: 1,
-          task: "Validate missing prior authorization support",
-          recommendation: "Review retro authorization feasibility before the denial deadline closes.",
-          decision: "Elena Park documented the remediation path and attached supporting workflow notes.",
-          outcome: "Authorization remediation documented. Financial result expected: $1,152. Resolution time target: 16 hours.",
-        },
-      ],
-    },
-    {
-      id: "org_bravo",
-      name: "ASC Bravo",
-      summary: "Coding and charge capture standardization opportunity.",
-      roles: [
-        {
-          role: "Coding Specialist",
-          queue: 2,
-          task: "Implant charge capture validation",
-          recommendation: "Validate the missing implant charge against the implant log and invoice support.",
-          decision: "Nina Patel approved charge correction review.",
-          outcome: "Charge action recorded. Financial result expected: $422.40. Resolution time target: 18 hours.",
-        },
-      ],
-    },
-    {
-      id: "org_charlie",
-      name: "ASC Charlie",
-      summary: "Smaller operator with outsized aging AR exposure.",
-      roles: [
-        {
-          role: "AR Specialist",
-          queue: 2,
-          task: "120+ day AR follow-up backlog",
-          recommendation: "Work the oldest accounts first and escalate claims without payer response.",
-          decision: "Maya Foster prioritized the oldest accounts and documented escalation points.",
-          outcome: "Backlog stratified by aging and value.",
-        },
-      ],
-    },
-  ],
-};
-
 const metricsNode = document.getElementById("demoMetrics");
 const organizationList = document.getElementById("organizationList");
 const mondayPanel = document.getElementById("mondayPanel");
@@ -105,95 +9,167 @@ const loadButton = document.getElementById("loadDemo");
 const runSimulator = document.getElementById("runSimulator");
 const simulatorPanel = document.getElementById("simulatorPanel");
 
+let portfolioState = null;
+
+function formatMoney(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  return `$${value}`;
+}
+
+async function fetchPortfolio() {
+  const response = await fetch("/api/summary");
+  if (!response.ok) {
+    throw new Error("Failed to load synthetic portfolio");
+  }
+  return response.json();
+}
+
+async function fetchAcquisition(params) {
+  const query = new URLSearchParams(params);
+  const response = await fetch(`/api/acquisition?${query.toString()}`);
+  if (!response.ok) {
+    throw new Error("Failed to load acquisition simulation");
+  }
+  return response.json();
+}
+
 if (loadButton) {
-  loadButton.addEventListener("click", () => {
-    renderMetrics();
-    renderMondayMorning();
-    renderOrganizations();
-    renderOrganization(demoData.organizations[0]);
+  loadButton.addEventListener("click", async () => {
+    loadButton.disabled = true;
+    loadButton.textContent = "Loading...";
+    try {
+      portfolioState = await fetchPortfolio();
+      renderMetrics(portfolioState.portfolio_snapshot.holdco_dashboard);
+      renderLeadershipFocus(portfolioState.portfolio_snapshot.holdco_dashboard, portfolioState.portfolio_snapshot.executive_operating_review);
+      renderOrganizations(portfolioState.portfolio_snapshot);
+    } catch (error) {
+      mondayPanel.innerHTML = `<p>${error.message}</p>`;
+    } finally {
+      loadButton.disabled = false;
+      loadButton.textContent = "Reload HoldCo";
+    }
   });
 }
 
 if (runSimulator) {
-  runSimulator.addEventListener("click", () => {
+  runSimulator.addEventListener("click", async () => {
     const specialty = document.getElementById("specialtySelect").value;
     const headcount = Number(document.getElementById("headcountInput").value);
-    const maturity = document.getElementById("maturitySelect").value;
-    renderSimulator(specialty, headcount, maturity);
+    const workflowMaturity = document.getElementById("maturitySelect").value;
+    runSimulator.disabled = true;
+    runSimulator.textContent = "Generating...";
+    try {
+      const simulation = await fetchAcquisition({
+        specialty,
+        headcount: String(headcount),
+        workflow_maturity: workflowMaturity,
+      });
+      renderSimulator(simulation);
+    } catch (error) {
+      simulatorPanel.innerHTML = `<p>${error.message}</p>`;
+    } finally {
+      runSimulator.disabled = false;
+      runSimulator.textContent = "Generate Integration Plan";
+    }
   });
 }
 
-function renderMetrics() {
+function renderMetrics(holdcoDashboard) {
   metricsNode.innerHTML = `
-    <div><strong>${demoData.portfolioMetrics.revenueAtRisk}</strong><br/>Revenue at risk</div>
-    <div><strong>${demoData.portfolioMetrics.openWork}</strong><br/>Open work</div>
-    <div><strong>${demoData.portfolioMetrics.recoveryPipeline}</strong><br/>Recovery pipeline</div>
-    <div><strong>${demoData.portfolioMetrics.productivity}</strong><br/>Productivity</div>
+    <div><strong>${formatMoney(holdcoDashboard.portfolio_revenue)}</strong><br/>Portfolio revenue</div>
+    <div><strong>${formatMoney(holdcoDashboard.portfolio_ebitda)}</strong><br/>Portfolio EBITDA</div>
+    <div><strong>${formatMoney(holdcoDashboard.revenue_at_risk)}</strong><br/>Revenue at risk</div>
+    <div><strong>${holdcoDashboard.value_creation_progress.progress_pct}%</strong><br/>Value creation progress</div>
   `;
 }
 
-function renderMondayMorning() {
+function renderLeadershipFocus(holdcoDashboard, executiveReview) {
   mondayPanel.innerHTML = `
-    <strong>${demoData.mondayMorning.vp}</strong>
-    <ul>${demoData.mondayMorning.brief.map((line) => `<li>${line}</li>`).join("")}</ul>
+    <strong>What leadership should focus on today</strong>
+    <ul>${holdcoDashboard.focus_today.map((line) => `<li>${line}</li>`).join("")}</ul>
+    <p><strong>Required decisions:</strong> ${executiveReview.required_decisions.join(" | ")}</p>
   `;
 }
 
-function renderOrganizations() {
+function renderOrganizations(portfolio) {
   organizationList.innerHTML = "";
-  demoData.organizations.forEach((organization, index) => {
+  portfolio.organization_summaries.forEach((organization, index) => {
     const item = document.createElement("button");
     item.className = `queue-item${index === 0 ? " is-active" : ""}`;
-    item.innerHTML = `<strong>${organization.name}</strong><p>${organization.summary}</p>`;
+    item.innerHTML = `
+      <strong>${organization.name}</strong>
+      <p>${organization.thesis}</p>
+      <p>Revenue at risk: ${formatMoney(organization.revenue_at_risk)} · Open work: ${organization.open_work}</p>
+    `;
     item.addEventListener("click", () => {
       document.querySelectorAll("#organizationList .queue-item").forEach((node) => node.classList.remove("is-active"));
       item.classList.add("is-active");
-      renderOrganization(organization);
+      renderOrganization(organization, portfolio);
     });
     organizationList.appendChild(item);
   });
+  renderOrganization(portfolio.organization_summaries[0], portfolio);
 }
 
-function renderOrganization(organization) {
+function renderOrganization(organization, portfolio) {
+  const roleViews = (portfolio.organization_role_views.find((item) => item.organization_id === organization.organization_id) || { roles: [] }).roles;
   roleList.innerHTML = "";
-  organization.roles.forEach((roleEntry, index) => {
+  roleViews.forEach((roleEntry, index) => {
     const item = document.createElement("button");
     item.className = `queue-item${index === 0 ? " is-active" : ""}`;
-    item.innerHTML = `<strong>${roleEntry.role}</strong><p>${roleEntry.queue} queued item(s)</p>`;
+    item.innerHTML = `
+      <strong>${roleEntry.label}</strong>
+      <p>${roleEntry.queue_size} queued item(s)</p>
+      <p>Revenue at risk: ${formatMoney(roleEntry.revenue_at_risk)}</p>
+    `;
     item.addEventListener("click", () => {
       document.querySelectorAll("#roleList .queue-item").forEach((node) => node.classList.remove("is-active"));
       item.classList.add("is-active");
-      renderRole(roleEntry, organization.name);
+      renderRole(roleEntry, organization, portfolio);
     });
     roleList.appendChild(item);
   });
-  renderRole(organization.roles[0], organization.name);
+  if (roleViews.length) {
+    renderRole(roleViews[0], organization, portfolio);
+  }
 }
 
-function renderRole(roleEntry, organizationName) {
+function renderRole(roleEntry, organization, portfolio) {
+  const initiative = portfolio.value_creation_initiatives.find((item) =>
+    item.organization_ids.includes(organization.organization_id)
+  ) || portfolio.value_creation_initiatives[0];
+  const pattern = portfolio.decision_intelligence.patterns.find((item) => item.organization === organization.name);
   recommendationPanel.innerHTML = `
-    <strong>${organizationName} · ${roleEntry.role}</strong>
-    <p><strong>Task:</strong> ${roleEntry.task}</p>
-    <p><strong>Recommendation:</strong> ${roleEntry.recommendation}</p>
+    <strong>${initiative.name}</strong>
+    <p><strong>Owner:</strong> ${initiative.owner_name} · ${initiative.owner_title}</p>
+    <p><strong>Target:</strong> ${initiative.target}</p>
+    <p><strong>Expected EBITDA impact:</strong> ${formatMoney(initiative.expected_ebitda_impact)}</p>
+    <p>${initiative.operational_link}</p>
   `;
-  decisionPanel.innerHTML = `
-    <strong>Decision Memory</strong>
-    <p>${roleEntry.decision}</p>
-  `;
+  decisionPanel.innerHTML = pattern ? `
+    <strong>${pattern.workflow}</strong>
+    <p><strong>Playbook:</strong> ${pattern.playbook}</p>
+    <p><strong>Decision owner:</strong> ${pattern.owner}</p>
+    <p><strong>Outcome:</strong> ${pattern.outcome}</p>
+  ` : "<p>No decision intelligence available.</p>";
   outcomePanel.innerHTML = `
-    <strong>Outcome</strong>
-    <p>${roleEntry.outcome}</p>
+    <strong>${organization.name} executive outcome</strong>
+    <p><strong>Role queue:</strong> ${roleEntry.label}</p>
+    <p><strong>Completed outcomes:</strong> ${roleEntry.completed_outcomes}</p>
+    <p><strong>Financial result:</strong> ${formatMoney(roleEntry.financial_result)}</p>
+    <p><strong>Urgent tasks:</strong> ${organization.operational_health.urgent_tasks}</p>
   `;
 }
 
-function renderSimulator(specialty, headcount, maturity) {
-  const urgency = maturity === "fragmented" ? "high" : maturity === "scaled" ? "low" : "medium";
+function renderSimulator(simulation) {
   simulatorPanel.innerHTML = `
-    <strong>${specialty} acquisition plan</strong>
-    <p><strong>Headcount:</strong> ${headcount}</p>
-    <p><strong>Workflow maturity:</strong> ${maturity}</p>
-    <p><strong>Operational gaps:</strong> ${specialty} work is likely running across disconnected systems with ${urgency} standardization urgency.</p>
-    <p><strong>Standardization opportunities:</strong> Stand up workflow definitions, assign queue ownership, and track decision memory across the acquired operator.</p>
-    <p><strong>Deployment plan:</strong> Map the workflow, import tasks, assign users, and begin measuring financial result plus resolution time.</p>
+    <strong>${simulation.specialty} acquisition integration plan</strong>
+    <p><strong>Current state:</strong> ${simulation.current_state_assessment.operating_model}</p>
+    <p><strong>Technology gap:</strong> ${simulation.technology_gaps[0]}</p>
+    <p><strong>Operational risk:</strong> ${simulation.operational_risks[0]}</p>
+    <p><strong>90-day roadmap:</strong> ${simulation.ninety_day_roadmap.map((item) => `${item.window}: ${item.focus}`).join(" | ")}</p>
+    <p><strong>Value creation:</strong> ${simulation.value_creation_opportunities.map((item) => `${item.initiative} (${formatMoney(item.expected_ebitda_impact)})`).join(" · ")}</p>
   `;
 }
