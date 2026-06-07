@@ -25,7 +25,21 @@ from .models import (
     Remit,
     WorkQueueItem,
 )
-from .operations import HumanDecision, OperationalTask, TaskOutcome, TaskRecommendation, WorkflowDefinition, workflow_catalog
+from .operations import (
+    DecisionMemoryRecord,
+    Facility,
+    HumanDecision,
+    OperationalTask,
+    OperatorUser,
+    Organization,
+    TaskOutcome,
+    TaskRecommendation,
+    Team,
+    WorkflowDefinition,
+    build_portfolio_snapshot,
+    simulate_acquisition,
+    workflow_catalog,
+)
 from .pipeline import PipelineResult, run_pipeline
 from .reviewer.packet import ReviewerPacket
 from .workflow.state import WorkflowAuditEvent, WorkflowItem
@@ -49,11 +63,15 @@ __all__ = [
     "DenialCopilotDraft",
     "Denial",
     "DenialOpportunity",
+    "DecisionMemoryRecord",
     "EvidenceCitation",
+    "Facility",
     "HumanDecision",
     "MockLLM",
     "MockLLMProvider",
     "OperationalTask",
+    "OperatorUser",
+    "Organization",
     "PatientEncounter",
     "PayerIntelligenceAnswer",
     "PayerIntelligenceCopilot",
@@ -81,5 +99,8 @@ __all__ = [
     "run_pipeline",
     "TaskOutcome",
     "TaskRecommendation",
+    "Team",
+    "build_portfolio_snapshot",
+    "simulate_acquisition",
     "workflow_catalog",
 ]

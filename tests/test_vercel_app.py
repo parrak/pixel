@@ -28,8 +28,8 @@ def test_root_page_renders_html():
 
     assert response["status"] == "200 OK"
     assert response["headers"]["Content-Type"].startswith("text/html")
-    assert b"Citron Health Demo" in response["body"]
-    assert b"Open Working Demo" in response["body"]
+    assert b"Operator Operating System" in response["body"]
+    assert b"Open Operator Demo" in response["body"]
 
 
 def test_demo_page_renders_html():
@@ -37,7 +37,7 @@ def test_demo_page_renders_html():
 
     assert response["status"] == "200 OK"
     assert response["headers"]["Content-Type"].startswith("text/html")
-    assert b"Back to Landing Page" in response["body"]
+    assert b"Monday Morning inside Citron" in response["body"]
 
 
 def test_case_api_requires_case_id():
@@ -54,4 +54,4 @@ def test_case_api_returns_case_payload():
     assert response["status"] == "200 OK"
     payload = json.loads(response["body"])
     assert payload["case_id"] == "ASC-CASE-008"
-    assert payload["work_queue"]
+    assert payload["operational_tasks"]

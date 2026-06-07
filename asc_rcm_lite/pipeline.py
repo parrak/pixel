@@ -18,7 +18,14 @@ from asc_rcm_lite.detectors.denials import DenialOpportunity, detect_denial_oppo
 from asc_rcm_lite.ingestion import DEFAULT_CASE_DIR, load_asc_case, load_asc_cases
 from asc_rcm_lite.intelligence.payer_patterns import PayerPatternSummary, build_payer_pattern_summary
 from asc_rcm_lite.models import ASCCase
-from asc_rcm_lite.operations import OperationalTask, WorkflowDefinition, build_operational_dashboard, build_operational_tasks, workflow_catalog
+from asc_rcm_lite.operations import (
+    OperationalTask,
+    WorkflowDefinition,
+    build_operational_dashboard,
+    build_operational_tasks,
+    build_portfolio_snapshot,
+    workflow_catalog,
+)
 from asc_rcm_lite.reviewer.packet import ReviewerPacket, render_packet_for_ar, render_packet_for_coding, render_packet_for_denial
 from asc_rcm_lite.workflow.state import WorkflowItem
 from asc_rcm_lite.workqueue import WorkQueueEntry, build_work_queue, manager_summary
@@ -47,6 +54,7 @@ class PipelineResult:
     manager_metrics: dict[str, object]
     operational_metrics: dict[str, object]
     workflow_definitions: tuple[WorkflowDefinition, ...]
+    portfolio_snapshot: dict[str, object]
 
 
 def run_pipeline(
@@ -88,6 +96,7 @@ def run_pipeline(
         manager_metrics=manager_summary(queue),
         operational_metrics=build_operational_dashboard(tasks),
         workflow_definitions=workflow_catalog(),
+        portfolio_snapshot=build_portfolio_snapshot(tasks, workflow_catalog()),
     )
 
 
@@ -164,6 +173,7 @@ def _jsonable(result: PipelineResult) -> dict[str, object]:
         ],
         "manager_metrics": result.manager_metrics,
         "operational_metrics": result.operational_metrics,
+        "portfolio_snapshot": result.portfolio_snapshot,
         "payer_friction_score": result.payer_intelligence.payer_friction_score,
     }
 

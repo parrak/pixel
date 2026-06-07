@@ -38,8 +38,18 @@ def test_pipeline_includes_operational_metrics_and_workflow_definitions():
     result = run_pipeline()
     assert "revenue_at_risk" in result.operational_metrics
     assert result.workflow_definitions
+    assert result.portfolio_snapshot
 
 
 def test_case_pipeline_results_include_operational_tasks():
     result = run_pipeline(case_id="ASC-CASE-006")
     assert result.cases[0].operational_tasks
+
+
+def test_operational_tasks_include_decision_memory():
+    result = run_pipeline(case_id="ASC-CASE-008")
+    task = result.cases[0].operational_tasks[0]
+
+    assert task.history
+    assert task.history[0].outcome.financial_result is not None
+    assert task.history[0].outcome.resolution_time_hours is not None

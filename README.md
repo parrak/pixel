@@ -1,17 +1,17 @@
 # Citron Health
 
-Citron Health is a synthetic specialty RCM operating-system prototype. It helps coders, billers, denial specialists, auth specialists, and managers manage work as:
+Citron Health is a synthetic specialty RCM operator-operating-system prototype. It helps revenue-cycle leaders and specialists manage work as:
 
 Task -> Recommendation -> Human Decision -> Outcome
 
-across specialty revenue-cycle workflows.
+across organizations, facilities, teams, users, and workflows.
 
 The product is deterministic-first. Synthetic rules, synthetic payer policies, and synthetic contract references are the source of truth. Copilot output is assistive only.
 
 ## Positioning
 
 - Synthetic ASC/surgical specialty RCM operating-system prototype
-- Operations Command Center, manager dashboard, workflow engine, and public demo site
+- Portfolio dashboard, Monday morning operator experience, workflow engine, and acquisition simulator
 - Deterministic detectors for coding QA, A/R, denials, workflow routing, and payer intelligence
 - Existing copilot outputs preserved as producers of recommendations and operational tasks
 - Reviewer-safe drafts, packets, queue prioritization, and Streamlit workbench
@@ -45,6 +45,15 @@ The product is deterministic-first. Synthetic rules, synthetic payer policies, a
 - Legacy copilot surfaces retained as supporting producers
 - Static public citron.health site with interactive synthetic demo
 
+## Phase 3 Product Surfaces
+
+- Portfolio operating dashboard across ASC Alpha, ASC Bravo, and ASC Charlie
+- Monday morning VP Revenue Cycle operating experience
+- Role-based queues for denial, AR, coding, and authorization specialists
+- Decision memory with financial result and resolution time
+- Config-backed workflow definitions
+- Acquisition integration simulator
+
 ## Copilot Surfaces
 
 - `asc_rcm_lite/copilot/coding_copilot.py`
@@ -59,6 +68,7 @@ The product is deterministic-first. Synthetic rules, synthetic payer policies, a
 - `asc_rcm_lite/operations.py`
 - `docs/PHASE2_ARCHITECTURE_ASSESSMENT.md`
 - `docs/PHASE2_IMPLEMENTATION_PLAN.md`
+- `docs/PHASE3_OPERATOR_OS_PLAN.md`
 - `index.html`, `demo.html`, `architecture.html`, `about.html`
 
 ## Quickstart
@@ -143,4 +153,4 @@ vercel deploy --prebuilt --prod
 - The mock copilot provider is local and template-based rather than model-backed.
 - Some opportunity classes are represented by the current synthetic scenarios more richly than others.
 
-See [docs/COMPLIANCE_GUARDRAILS.md](/Users/rakes/Documents/pixel/docs/COMPLIANCE_GUARDRAILS.md), [docs/PRODUCT_SPEC.md](/Users/rakes/Documents/pixel/docs/PRODUCT_SPEC.md), [docs/PHASE2_ARCHITECTURE_ASSESSMENT.md](/Users/rakes/Documents/pixel/docs/PHASE2_ARCHITECTURE_ASSESSMENT.md), and [docs/PHASE2_IMPLEMENTATION_PLAN.md](/Users/rakes/Documents/pixel/docs/PHASE2_IMPLEMENTATION_PLAN.md) for more detail.
+See [docs/COMPLIANCE_GUARDRAILS.md](/Users/rakes/Documents/pixel/docs/COMPLIANCE_GUARDRAILS.md), [docs/PRODUCT_SPEC.md](/Users/rakes/Documents/pixel/docs/PRODUCT_SPEC.md), [docs/PHASE2_ARCHITECTURE_ASSESSMENT.md](/Users/rakes/Documents/pixel/docs/PHASE2_ARCHITECTURE_ASSESSMENT.md), [docs/PHASE2_IMPLEMENTATION_PLAN.md](/Users/rakes/Documents/pixel/docs/PHASE2_IMPLEMENTATION_PLAN.md), and [docs/PHASE3_OPERATOR_OS_PLAN.md](/Users/rakes/Documents/pixel/docs/PHASE3_OPERATOR_OS_PLAN.md) for more detail.

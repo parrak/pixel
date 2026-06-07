@@ -1,0 +1,87 @@
+[
+  {
+    "workflow_id": "asc_denial_review",
+    "name": "ASC Denial Review",
+    "description": "Denial triage, evidence assembly, and routing for ASC denial work.",
+    "queue_name": "Denials",
+    "owner_roles": ["denial_specialist", "manager"],
+    "default_team_name": "Denials Team",
+    "trigger_sources": ["denial", "ar"],
+    "target_outcomes": ["denial resolved", "appeal ready", "write-off prevented"],
+    "service_level_hours": 48,
+    "stages": [
+      {"stage_id": "triage", "label": "Triage", "description": "Confirm denial reason and gather cited evidence."},
+      {"stage_id": "evidence", "label": "Evidence", "description": "Collect documentation and payer policy support."},
+      {"stage_id": "resolution", "label": "Resolution", "description": "Prepare appeal, correction, or escalation."}
+    ],
+    "decision_options": ["approve recommendation", "escalate to manager", "reroute work"]
+  },
+  {
+    "workflow_id": "asc_ar_followup",
+    "name": "ASC AR Follow-Up",
+    "description": "A/R aging, claim status validation, and payer follow-up orchestration.",
+    "queue_name": "AR Follow-Up",
+    "owner_roles": ["biller", "manager"],
+    "default_team_name": "AR Team",
+    "trigger_sources": ["ar"],
+    "target_outcomes": ["payer response obtained", "claim advanced", "recovery submitted"],
+    "service_level_hours": 48,
+    "stages": [
+      {"stage_id": "review", "label": "Review", "description": "Review account status, aging, and prior touches."},
+      {"stage_id": "followup", "label": "Follow-Up", "description": "Complete payer or internal follow-up."},
+      {"stage_id": "escalation", "label": "Escalation", "description": "Escalate unresolved work based on value and timing."}
+    ],
+    "decision_options": ["advance follow-up", "escalate to manager", "hold for research"]
+  },
+  {
+    "workflow_id": "asc_authorization",
+    "name": "ASC Authorization",
+    "description": "Authorization readiness, remediation, and retro-review workflow.",
+    "queue_name": "Authorization",
+    "owner_roles": ["auth_specialist", "manager"],
+    "default_team_name": "Authorization Team",
+    "trigger_sources": ["authorization", "denial"],
+    "target_outcomes": ["authorization secured", "denial prevented", "retro review initiated"],
+    "service_level_hours": 24,
+    "stages": [
+      {"stage_id": "verification", "label": "Verification", "description": "Validate authorization status and payer requirements."},
+      {"stage_id": "remediation", "label": "Remediation", "description": "Repair missing, expired, or mismatched authorization details."},
+      {"stage_id": "handoff", "label": "Handoff", "description": "Return the case to downstream workflow with evidence."}
+    ],
+    "decision_options": ["initiate remediation", "escalate to payer strategy", "reroute to denials"]
+  },
+  {
+    "workflow_id": "asc_charge_capture",
+    "name": "ASC Charge Capture",
+    "description": "Charge integrity, implant capture, and missing revenue workflow.",
+    "queue_name": "Charge Capture",
+    "owner_roles": ["coder", "biller", "manager"],
+    "default_team_name": "Coding Team",
+    "trigger_sources": ["coding", "charge_capture"],
+    "target_outcomes": ["charge completed", "revenue captured", "claim corrected"],
+    "service_level_hours": 24,
+    "stages": [
+      {"stage_id": "validation", "label": "Validation", "description": "Validate documentation against the charge record."},
+      {"stage_id": "correction", "label": "Correction", "description": "Add or correct charge detail with human approval."},
+      {"stage_id": "release", "label": "Release", "description": "Return corrected work to downstream billing flow."}
+    ],
+    "decision_options": ["correct charge", "escalate to leadership", "return to queue"]
+  },
+  {
+    "workflow_id": "asc_coding_review",
+    "name": "ASC Coding Review",
+    "description": "Pre-bill and post-bill coding review for ASC specialty work.",
+    "queue_name": "Coding Review",
+    "owner_roles": ["coder", "manager"],
+    "default_team_name": "Coding Team",
+    "trigger_sources": ["coding", "pre_bill"],
+    "target_outcomes": ["coding validated", "claim corrected", "risk avoided"],
+    "service_level_hours": 24,
+    "stages": [
+      {"stage_id": "inspection", "label": "Inspection", "description": "Inspect the cited coding discrepancy."},
+      {"stage_id": "clarification", "label": "Clarification", "description": "Clarify documentation or coding support."},
+      {"stage_id": "signoff", "label": "Sign-Off", "description": "Document reviewer action and release."}
+    ],
+    "decision_options": ["approve correction", "seek documentation", "defer to manager"]
+  }
+]

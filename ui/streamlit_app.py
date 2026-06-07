@@ -12,8 +12,21 @@ from asc_rcm_lite.copilot.ar_copilot import ARCopilot
 from asc_rcm_lite.copilot.denial_copilot import DenialCopilot
 from asc_rcm_lite.copilot.payer_intelligence_copilot import PayerIntelligenceCopilot
 from asc_rcm_lite.copilot.workflow_assistant import WorkflowAssistant
-from asc_rcm_lite.operations import OperationalTask
+from asc_rcm_lite.operations import OperationalTask, simulate_acquisition
 from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, run_pipeline
+
+
+ROLE_LABELS = {
+    "manager": "VP Revenue Cycle",
+    "denial_specialist": "Denial Specialist",
+    "biller": "AR Specialist",
+    "coder": "Coding Specialist",
+    "auth_specialist": "Authorization Specialist",
+}
+
+
+def _priority_badge(priority: str) -> str:
+    return f"<span class='badge badge-{priority}'>{priority.replace('_', ' ').title()}</span>"
 
 
 def _task_card(label: str, title: str, body: str) -> str:
@@ -26,49 +39,31 @@ def _task_card(label: str, title: str, body: str) -> str:
     """
 
 
-def _outcome_from_decision(task: OperationalTask, decision: str, recommendation: object) -> dict[str, object]:
-    title = getattr(recommendation, "title", "Recommendation")
-    if decision == "Approve recommendation":
-        return {
-            "status": "Recovery pipeline advanced",
-            "impact_summary": f"{task.workflow_name} moved forward with an approved action.",
-            "value_realized": str(task.amount_at_risk or "0.00"),
-            "notes": f"{title} was accepted for synthetic execution.",
-        }
-    if decision == "Escalate for manager review":
-        return {
-            "status": "Escalated",
-            "impact_summary": "Task escalated to manager review due to workflow risk or ambiguity.",
-            "value_realized": "0.00",
-            "notes": "Synthetic escalation created for manager oversight.",
-        }
-    return {
-        "status": "Rerouted",
-        "impact_summary": "Recommendation rejected and task returned to workflow routing.",
-        "value_realized": "0.00",
-        "notes": "Synthetic task sent back for alternative handling.",
-    }
+def _format_money(value: object) -> str:
+    if value in (None, "", "None"):
+        return "-"
+    return f"${value}"
 
 
-st.set_page_config(page_title="Citron Health Operations Command Center", layout="wide")
-
+st.set_page_config(page_title="Citron Health Operator OS", layout="wide")
 st.markdown(
     """
     <style>
     .stApp { background: linear-gradient(180deg, #f4f2ea 0%, #fbfaf6 35%, #ffffff 100%); }
     .hero {
-        padding: 1.25rem 1.4rem;
+        padding: 1.3rem 1.5rem;
         border: 1px solid rgba(17, 24, 39, 0.08);
-        border-radius: 22px;
-        background: radial-gradient(circle at top left, rgba(255, 205, 102, 0.28), transparent 32%),
-                    linear-gradient(135deg, #11261f 0%, #1d3a31 52%, #28473d 100%);
+        border-radius: 24px;
+        background:
+          radial-gradient(circle at top left, rgba(255, 205, 102, 0.28), transparent 32%),
+          linear-gradient(135deg, #11261f 0%, #1d3a31 52%, #28473d 100%);
         color: #f8f7f2;
         margin-bottom: 1rem;
     }
     .subtle {
         padding: 0.9rem 1rem;
         border-radius: 18px;
-        background: rgba(255,255,255,0.85);
+        background: rgba(255,255,255,0.86);
         border: 1px solid rgba(17, 24, 39, 0.08);
     }
     .card {
@@ -98,239 +93,272 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-def _priority_badge(priority: str) -> str:
-    return f"<span class='badge badge-{priority}'>{priority.replace('_', ' ').title()}</span>"
-
-
-def _format_money(value: object) -> str:
-    if value is None:
-        return "-"
-    return f"${value}"
-
-
 result = run_pipeline(as_of_date=DEFAULT_AS_OF_DATE)
+portfolio = result.portfolio_snapshot
 all_tasks = [task for case in result.cases for task in case.operational_tasks]
 all_cases = {case.case_id: case for case in result.cases}
-
-if "demo_decisions" not in st.session_state:
-    st.session_state.demo_decisions = {}
+orgs = portfolio["organizations"]
+org_names = [org["name"] for org in orgs]
+selected_org_name = st.sidebar.selectbox("Organization", org_names, index=0)
+selected_org = next(org for org in orgs if org["name"] == selected_org_name)
+selected_role = st.sidebar.selectbox("Role View", [ROLE_LABELS[key] for key in ROLE_LABELS], index=0)
+selected_role_key = next(key for key, value in ROLE_LABELS.items() if value == selected_role)
+org_tasks = [task for task in all_tasks if task.organization_name == selected_org_name]
+role_tasks = [task for task in org_tasks if task.owner_role == selected_role_key] or org_tasks
+selected_task_label = st.sidebar.selectbox(
+    "Task",
+    [f"{task.task_id} | {task.title}" for task in role_tasks],
+)
+selected_task = next(task for task in role_tasks if f"{task.task_id} | {task.title}" == selected_task_label)
+selected_case = all_cases[selected_task.case_id]
+selected_workflow = st.sidebar.selectbox("Workflow", [workflow.name for workflow in result.workflow_definitions], index=0)
 
 st.markdown(
     """
     <div class="hero">
-      <div class="eyebrow">Citron Health Phase 2</div>
-      <h1 style="margin:0.2rem 0 0.5rem 0;">Operations Command Center</h1>
-      <p style="margin:0;max-width:52rem;">
-        Citron Health is the operating system for specialty revenue cycle. Start from the work queue,
-        route operational tasks, review recommendations, record decisions, and track outcomes.
+      <div class="eyebrow">Citron Health Phase 3</div>
+      <h1 style="margin:0.2rem 0 0.5rem 0;">Operator Operating System</h1>
+      <p style="margin:0;max-width:58rem;">
+        Citron exists to make acquired specialty RCM businesses better operators. The center of gravity is now
+        portfolio workflow ownership: organization, facility, team, user, task, recommendation, decision, and outcome.
       </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
-st.warning("Synthetic data only. Human review required. No external APIs. No real payer submission.")
+st.warning("Synthetic data only. Human review required. No external APIs. No autonomous workflows.")
 
-workflow_filter = st.sidebar.selectbox("Workflow", ["All"] + sorted({task.workflow_name for task in all_tasks}))
-owner_filter = st.sidebar.selectbox("Owner", ["All"] + sorted({task.owner_role for task in all_tasks}))
-priority_filter = st.sidebar.selectbox("Priority", ["All", "urgent", "high", "normal", "low"])
-case_filter = st.sidebar.selectbox("Case", ["All"] + sorted(all_cases))
-
-filtered_tasks = all_tasks
-if workflow_filter != "All":
-    filtered_tasks = [task for task in filtered_tasks if task.workflow_name == workflow_filter]
-if owner_filter != "All":
-    filtered_tasks = [task for task in filtered_tasks if task.owner_role == owner_filter]
-if priority_filter != "All":
-    filtered_tasks = [task for task in filtered_tasks if task.priority_band == priority_filter]
-if case_filter != "All":
-    filtered_tasks = [task for task in filtered_tasks if task.case_id == case_filter]
-
-selected_task_label = st.sidebar.selectbox(
-    "Task",
-    [f"{task.task_id} | {task.workflow_name} | {task.title}" for task in filtered_tasks] or ["No tasks available"],
-)
-selected_task = next(
-    (
-        task
-        for task in filtered_tasks
-        if f"{task.task_id} | {task.workflow_name} | {task.title}" == selected_task_label
-    ),
-    filtered_tasks[0] if filtered_tasks else all_tasks[0],
-)
-selected_case = all_cases[selected_task.case_id]
-
-metric_cols = st.columns(4)
+metric_cols = st.columns(5)
 metric_cols[0].markdown(
-    f"<div class='subtle'><div class='metric-label'>Revenue At Risk</div><div class='metric-value'>${result.operational_metrics['revenue_at_risk']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Revenue At Risk</div><div class='metric-value'>${portfolio['portfolio_metrics']['revenue_at_risk']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[1].markdown(
-    f"<div class='subtle'><div class='metric-label'>Open Work</div><div class='metric-value'>{result.operational_metrics['open_work']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Open Work</div><div class='metric-value'>{portfolio['portfolio_metrics']['open_work']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[2].markdown(
-    f"<div class='subtle'><div class='metric-label'>Urgent Tasks</div><div class='metric-value'>{result.operational_metrics['operational_health']['urgent_tasks']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Recovery Pipeline</div><div class='metric-value'>${portfolio['portfolio_metrics']['recovery_pipeline']}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[3].markdown(
-    f"<div class='subtle'><div class='metric-label'>Recovery Pipeline</div><div class='metric-value'>${result.operational_metrics['recovery_pipeline']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Workflow Bottlenecks</div><div class='metric-value'>{len(portfolio['portfolio_metrics']['workflow_bottlenecks'])}</div></div>",
+    unsafe_allow_html=True,
+)
+metric_cols[4].markdown(
+    f"<div class='subtle'><div class='metric-label'>Organizations</div><div class='metric-value'>{len(portfolio['organizations'])}</div></div>",
     unsafe_allow_html=True,
 )
 
 tabs = st.tabs(
     [
-        "Operations Command Center",
-        "Manager Dashboard",
+        "Portfolio OS",
+        "Monday Morning",
+        "Role Queues",
+        "Decision Memory",
         "Workflow Engine",
-        "Decision Lab",
-        "Legacy Copilots",
-        "Audit & Eval",
+        "Acquisition Simulator",
+        "Legacy Features",
     ]
 )
 
 with tabs[0]:
-    st.subheader("Work Queue")
-    st.caption("Primary Phase 2 surface: queue-first operations management for specialty RCM workflows.")
-    rows = [
+    st.subheader("Portfolio Dashboard")
+    st.caption("Rollup thesis first: portfolio health across ASC Alpha, ASC Bravo, and ASC Charlie.")
+    org_rows = [
         {
-            "task_id": task.task_id,
-            "workflow": task.workflow_name,
-            "title": task.title,
-            "owner": task.owner_role,
-            "priority": task.priority_band,
-            "amount_at_risk": _format_money(task.amount_at_risk),
-            "due_date": task.due_date or "-",
-            "aging_days": task.aging_days if task.aging_days is not None else "-",
-            "case_id": task.case_id,
+            "organization": summary["name"],
+            "specialty": summary["specialty"],
+            "revenue_at_risk": _format_money(summary["revenue_at_risk"]),
+            "open_work": summary["open_work"],
+            "recovery_pipeline": _format_money(summary["recovery_pipeline"]),
+            "completed_outcomes": summary["productivity"]["completed_outcomes"],
+            "financial_result": _format_money(summary["productivity"]["financial_result"]),
+            "urgent_tasks": summary["operational_health"]["urgent_tasks"],
         }
-        for task in filtered_tasks
+        for summary in portfolio["organization_summaries"]
     ]
-    st.dataframe(rows, use_container_width=True)
+    st.dataframe(org_rows, use_container_width=True)
 
-    left, right = st.columns([1.1, 0.9])
-    with left:
-        st.markdown(
-            f"""
-            <div class="card">
-              <div class="eyebrow">{selected_task.workflow_name}</div>
-              <h3 style="margin:0.2rem 0 0.6rem 0;">{selected_task.title}</h3>
-              {_priority_badge(selected_task.priority_band)}
-              <span class="badge badge-normal">{selected_task.owner_role.replace('_', ' ').title()}</span>
-              <p style="margin-top:0.8rem;">{selected_task.description}</p>
-              <p><strong>Case:</strong> {selected_task.case_id}<br/>
-              <strong>Scenario:</strong> {selected_task.source_case_scenario}<br/>
-              <strong>Amount at risk:</strong> {_format_money(selected_task.amount_at_risk)}<br/>
-              <strong>Due date:</strong> {selected_task.due_date or "-"}<br/>
-              <strong>Evidence:</strong> {", ".join(selected_task.cited_evidence_ids)}</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with right:
-        recommendation = selected_task.recommendations[0]
-        st.markdown(
-            f"""
-            <div class="card">
-              <div class="eyebrow">Recommendation</div>
-              <h3 style="margin:0.2rem 0 0.6rem 0;">{recommendation.title}</h3>
-              <p><strong>Producer:</strong> {recommendation.producer}<br/>
-              <strong>Confidence:</strong> {recommendation.confidence_label}<br/>
-              <strong>Suggested action:</strong> {recommendation.suggested_action}</p>
-              <p>{recommendation.summary}</p>
-              <p><strong>Rationale:</strong> {recommendation.rationale}</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    left, right = st.columns(2)
+    selected_org_summary = next(summary for summary in portfolio["organization_summaries"] if summary["name"] == selected_org_name)
+    left.json(
+        {
+            "organization": selected_org_summary["name"],
+            "thesis": selected_org_summary["thesis"],
+            "aging": selected_org_summary["aging"],
+            "operational_health": selected_org_summary["operational_health"],
+        }
+    )
+    right.json(
+        {
+            "portfolio_operational_health": portfolio["portfolio_metrics"]["operational_health"],
+            "workflow_counts": portfolio["portfolio_metrics"]["workflow_counts"],
+            "specialist_productivity": portfolio["portfolio_metrics"]["specialist_productivity"],
+        }
+    )
 
 with tabs[1]:
-    st.subheader("Manager Dashboard")
-    dashboard_cols = st.columns(2)
-    dashboard_cols[0].json(
-        {
-            "revenue_at_risk": result.operational_metrics["revenue_at_risk"],
-            "open_work": result.operational_metrics["open_work"],
-            "recovery_pipeline": result.operational_metrics["recovery_pipeline"],
-            "queue_aging": result.operational_metrics["queue_aging"],
-        }
+    monday = portfolio["monday_morning"]
+    st.subheader(monday["title"])
+    st.caption("Guided day-in-the-life experience for an acquired ASC operator running inside Citron.")
+    vp, assign, outcomes = st.columns([1.2, 1, 1])
+    vp.markdown(
+        _task_card(
+            "VP Revenue Cycle",
+            f"{monday['vp_user']['display_name']} · {monday['vp_user']['organization']}",
+            " ".join(monday["executive_brief"]),
+        ),
+        unsafe_allow_html=True,
     )
-    dashboard_cols[1].json(
-        {
-            "workflow_bottlenecks": result.operational_metrics["workflow_bottlenecks"],
-            "workflow_counts": result.operational_metrics["workflow_counts"],
-            "specialist_productivity": result.operational_metrics["specialist_productivity"],
-            "operational_health": result.operational_metrics["operational_health"],
-        }
-    )
-    st.subheader("Operational Intelligence")
-    st.json(result.payer_intelligence.payer_friction_score)
+    assign.json({"assignments": monday["assignments"], "critical_work": monday["critical_work"]})
+    outcomes.json({"workflow_bottlenecks": monday["workflow_bottlenecks"], "outcomes": monday["outcomes"]})
 
 with tabs[2]:
-    st.subheader("Workflow Engine")
-    st.caption("Workflow definitions are first-class Phase 2 concepts.")
-    workflow_rows = [
+    st.subheader(f"{selected_role} Queue")
+    st.caption(f"Operational queue for {selected_org_name}. This view is role-first rather than detector-first.")
+    role_rows = [
+        {
+            "task_id": task.task_id,
+            "title": task.title,
+            "workflow": task.workflow_name,
+            "priority": task.priority_band,
+            "facility": task.facility_name,
+            "assignee": task.assignee_name,
+            "amount_at_risk": _format_money(task.amount_at_risk),
+            "status": task.status,
+        }
+        for task in role_tasks
+    ]
+    st.dataframe(role_rows, use_container_width=True)
+    role_view = next(view for view in portfolio["role_views"] if view["role"] == selected_role_key)
+    st.json(role_view)
+
+    left, right = st.columns([1.1, 0.9])
+    recommendation = selected_task.recommendations[0]
+    left.markdown(
+        f"""
+        <div class="card">
+          <div class="eyebrow">{selected_task.organization_name} · {selected_task.team_name}</div>
+          <h3 style="margin:0.2rem 0 0.6rem 0;">{selected_task.title}</h3>
+          {_priority_badge(selected_task.priority_band)}
+          <span class="badge badge-normal">{ROLE_LABELS[selected_task.owner_role]}</span>
+          <p style="margin-top:0.8rem;">{selected_task.description}</p>
+          <p><strong>Facility:</strong> {selected_task.facility_name}<br/>
+          <strong>Assignee:</strong> {selected_task.assignee_name}<br/>
+          <strong>Workflow Stage:</strong> {selected_task.workflow_stage}<br/>
+          <strong>Due Date:</strong> {selected_task.due_date or "-"}<br/>
+          <strong>Amount at Risk:</strong> {_format_money(selected_task.amount_at_risk)}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    right.markdown(
+        f"""
+        <div class="card">
+          <div class="eyebrow">Recommendation</div>
+          <h3 style="margin:0.2rem 0 0.6rem 0;">{recommendation.title}</h3>
+          <p><strong>Producer:</strong> {recommendation.producer}<br/>
+          <strong>Confidence:</strong> {recommendation.confidence_label}<br/>
+          <strong>Suggested Action:</strong> {recommendation.suggested_action}</p>
+          <p>{recommendation.summary}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with tabs[3]:
+    st.subheader("Decision Memory")
+    st.caption("Visible history for why work exists, what humans did, and what outcomes resulted.")
+    history_rows = [
+        {
+            "record_id": record.record_id,
+            "workflow_stage": record.workflow_stage,
+            "recommendation": record.recommendation_title,
+            "decision": record.decision.decision,
+            "actor": record.decision.actor_name,
+            "role": ROLE_LABELS.get(record.decision.actor_role, record.decision.actor_role),
+            "outcome": record.outcome.status,
+            "financial_result": _format_money(record.outcome.financial_result),
+            "resolution_hours": record.outcome.resolution_time_hours,
+            "timestamp": record.decision.timestamp,
+        }
+        for record in selected_task.history
+    ]
+    st.dataframe(history_rows, use_container_width=True)
+    if selected_task.history:
+        record = selected_task.history[0]
+        st.json(
+            {
+                "why_recommendation_exists": record.recommendation_summary,
+                "decision_rationale": record.decision.rationale,
+                "outcome_summary": record.outcome.impact_summary,
+                "notes": record.outcome.notes,
+            }
+        )
+
+with tabs[4]:
+    st.subheader("Workflow Definition Engine")
+    st.caption("Workflow definitions are configuration-backed and future specialties can plug into the same engine.")
+    workflow = next(workflow for workflow in result.workflow_definitions if workflow.name == selected_workflow)
+    st.json(
         {
             "workflow_id": workflow.workflow_id,
             "name": workflow.name,
             "queue_name": workflow.queue_name,
-            "owner_roles": ", ".join(workflow.owner_roles),
-            "sla_hours": workflow.service_level_hours,
-            "trigger_sources": ", ".join(workflow.trigger_sources),
-            "target_outcomes": ", ".join(workflow.target_outcomes),
+            "default_team_name": workflow.default_team_name,
+            "owner_roles": workflow.owner_roles,
+            "decision_options": workflow.decision_options,
+            "service_level_hours": workflow.service_level_hours,
+            "target_outcomes": workflow.target_outcomes,
         }
-        for workflow in result.workflow_definitions
+    )
+    stage_rows = [
+        {
+            "stage_id": stage.stage_id,
+            "label": stage.label,
+            "description": stage.description,
+        }
+        for stage in workflow.stages
     ]
-    st.dataframe(workflow_rows, use_container_width=True)
+    st.dataframe(stage_rows, use_container_width=True)
 
-with tabs[3]:
-    st.subheader("Task -> Recommendation -> Decision -> Outcome")
-    st.caption("Synthetic interactive workflow for the selected operational task.")
-    recommendation = selected_task.recommendations[0]
-    decision_key = f"{selected_task.task_id}:decision"
-    rationale_key = f"{selected_task.task_id}:rationale"
-    simulated = st.session_state.demo_decisions.get(selected_task.task_id)
-
-    decision = st.radio(
-        "Human decision",
-        ["Approve recommendation", "Escalate for manager review", "Reject and reroute"],
-        key=decision_key,
-        horizontal=True,
+with tabs[5]:
+    st.subheader("Acquisition Integration Simulator")
+    st.caption("Demonstrates how software creates value across acquisitions instead of acting as a standalone point tool.")
+    col1, col2, col3 = st.columns(3)
+    specialty = col1.selectbox("Specialty", portfolio["acquisition_defaults"]["specialties"], index=0)
+    headcount = col2.slider("Headcount", min_value=15, max_value=150, value=75, step=5)
+    maturity = col3.selectbox("Workflow Maturity", portfolio["acquisition_defaults"]["workflow_maturity_levels"], index=1)
+    systems = st.multiselect(
+        "Systems",
+        portfolio["acquisition_defaults"]["systems"],
+        default=["EHR", "Practice Management", "Clearinghouse", "Payer Portals", "Spreadsheets"],
     )
-    st.text_input(
-        "Decision rationale",
-        value=st.session_state.get(rationale_key, "Validated synthetic evidence and chose the next operational step."),
-        key=rationale_key,
+    simulation = simulate_acquisition(
+        specialty=specialty,
+        headcount=headcount,
+        workflow_maturity=maturity,
+        systems=tuple(systems),
     )
-    if st.button("Record synthetic outcome", use_container_width=True):
-        rationale = st.session_state.get(rationale_key, "")
-        st.session_state.demo_decisions[selected_task.task_id] = {
-            "decision": decision,
-            "rationale": rationale,
-            "outcome": _outcome_from_decision(selected_task, decision, recommendation),
+    left, right = st.columns(2)
+    left.json(
+        {
+            "workflow_map": simulation["workflow_map"],
+            "operational_gaps": simulation["operational_gaps"],
+            "standardization_opportunities": simulation["standardization_opportunities"],
         }
-        simulated = st.session_state.demo_decisions[selected_task.task_id]
-
-    chain_cols = st.columns(4)
-    chain_cols[0].markdown(_task_card("Task", selected_task.title, selected_task.workflow_name), unsafe_allow_html=True)
-    chain_cols[1].markdown(_task_card("Recommendation", recommendation.title, recommendation.suggested_action), unsafe_allow_html=True)
-    chain_cols[2].markdown(
-        _task_card("Decision", simulated["decision"] if simulated else "Awaiting human choice", simulated["rationale"] if simulated else "No decision recorded"),
-        unsafe_allow_html=True,
     )
-    chain_cols[3].markdown(
-        _task_card(
-            "Outcome",
-            simulated["outcome"]["status"] if simulated else "Outcome pending",
-            simulated["outcome"]["impact_summary"] if simulated else "Record a synthetic decision to preview outcome tracking.",
-        ),
-        unsafe_allow_html=True,
+    right.json(
+        {
+            "deployment_plan": simulation["deployment_plan"],
+            "operating_model": simulation["operating_model"],
+        }
     )
-    if simulated:
-        st.json(simulated["outcome"])
 
-with tabs[4]:
-    st.subheader("Legacy Copilot Surfaces")
+with tabs[6]:
+    st.subheader("Legacy Features")
+    st.caption("Existing ASC RCM features remain in the system as workflow-supporting modules.")
     legacy_tabs = st.tabs(["Coding", "A/R", "Denials", "Workflow Assistant", "Payer Intelligence", "Case Detail"])
 
     with legacy_tabs[0]:
@@ -363,12 +391,7 @@ with tabs[4]:
         assistant = WorkflowAssistant()
         if selected_case.workflow_items:
             item = selected_case.workflow_items[0]
-            st.write(
-                {
-                    "current_state": item.current_state,
-                    "allowed_actions": assistant.allowed_actions(item, role=item.owner_role),
-                }
-            )
+            st.write({"current_state": item.current_state, "allowed_actions": assistant.allowed_actions(item, role=item.owner_role)})
             st.text(assistant.generate_role_specific_note(item, role=item.owner_role).content)
         else:
             st.info("No workflow items for the selected synthetic case.")
@@ -388,18 +411,10 @@ with tabs[4]:
         st.json(
             {
                 "case_id": selected_case.case_id,
+                "organization": selected_task.organization_name,
+                "facility": selected_task.facility_name,
                 "coding_opportunities": [item.coding_issue_type for item in selected_case.coding_opportunities],
                 "ar_flags": [item.flag_type for item in selected_case.ar_flags],
                 "denial_categories": [item.denial_category for item in selected_case.denial_opportunities],
             }
         )
-
-with tabs[5]:
-    st.subheader("Audit & Eval")
-    if selected_case.workflow_items:
-        st.write([event.__dict__ for event in selected_case.workflow_items[0].audit_trace])
-    else:
-        st.info("No workflow audit events have been recorded yet.")
-    from evals.run_asc_copilot_eval import run_asc_copilot_eval
-
-    st.json(run_asc_copilot_eval())

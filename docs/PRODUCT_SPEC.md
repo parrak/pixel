@@ -10,17 +10,19 @@ without automating final coding, billing, compliance, or payer decisions.
 
 ## Users
 
-- Coder
-- Biller
+- VP Revenue Cycle
 - Denial specialist
-- Auth specialist
-- Manager
+- AR specialist
+- Coding specialist
+- Authorization specialist
 
 ## Core Product Areas
 
 - Operations Command Center
-- Manager Dashboard
+- Portfolio Dashboard
+- Monday Morning Experience
 - Workflow Engine
+- Acquisition Integration Simulator
 - AI Coding Copilot
 - A/R Flagging Copilot
 - Denials and Appeals Copilot
@@ -47,6 +49,8 @@ without automating final coding, billing, compliance, or payer decisions.
 - Evidence-backed recommendations
 - Human decisions
 - Outcomes
+- Organization / facility / team / user rollups
+- Financial result and resolution time history
 - Priority-scored work queue items
 - Role-aware workflow suggestions
 - Reviewer packets

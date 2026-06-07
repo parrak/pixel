@@ -19,40 +19,84 @@
     <main class="page-shell">
       <section class="page-hero">
         <span class="eyebrow">Interactive Demo</span>
-        <h1>Load a synthetic ASC organization</h1>
+        <h1>Run a synthetic specialty RCM portfolio inside Citron</h1>
         <p>
-          Explore queues, inspect recommendations, record a decision, and see the synthetic outcome.
-          No login required.
+          Load the portfolio, move through Monday morning, inspect role queues, review decision
+          memory, and simulate the next acquisition.
         </p>
       </section>
 
       <section class="demo-toolbar">
-        <button id="loadDemo" class="button button-primary">Load Synthetic ASC</button>
+        <button id="loadDemo" class="button button-primary">Load Portfolio</button>
         <div class="demo-metrics" id="demoMetrics"></div>
+      </section>
+
+      <section class="demo-controls">
+        <div class="story-card">
+          <h2>Portfolio</h2>
+          <div id="organizationList" class="queue-list"></div>
+        </div>
+        <div class="story-card">
+          <h2>Monday Morning</h2>
+          <div id="mondayPanel" class="detail-panel">
+            <p>Load the synthetic portfolio to begin.</p>
+          </div>
+        </div>
       </section>
 
       <section class="demo-grid">
         <div class="story-card">
-          <h2>Queues</h2>
-          <div id="queueList" class="queue-list"></div>
+          <h2>Role Queues</h2>
+          <div id="roleList" class="queue-list"></div>
         </div>
         <div class="story-card">
           <h2>Recommendation</h2>
           <div id="recommendationPanel" class="detail-panel">
-            <p>Load the synthetic organization to begin.</p>
+            <p>Select a role queue to inspect work.</p>
           </div>
         </div>
         <div class="story-card">
-          <h2>Decision</h2>
+          <h2>Decision Memory</h2>
           <div id="decisionPanel" class="detail-panel">
-            <p>Pick a task to record a decision.</p>
+            <p>Decision memory appears after the portfolio loads.</p>
           </div>
         </div>
         <div class="story-card">
           <h2>Outcome</h2>
           <div id="outcomePanel" class="detail-panel">
-            <p>Outcomes appear after a synthetic human decision.</p>
+            <p>Outcome and financial result appear alongside the selected role queue.</p>
           </div>
+        </div>
+      </section>
+
+      <section class="story-card simulator-card">
+        <h2>Acquisition Integration Simulator</h2>
+        <div class="simulator-grid">
+          <label>
+            Specialty
+            <select id="specialtySelect">
+              <option>ASC</option>
+              <option>Ophthalmology</option>
+              <option>GI</option>
+              <option>Orthopedics</option>
+            </select>
+          </label>
+          <label>
+            Headcount
+            <input id="headcountInput" type="number" min="15" max="150" step="5" value="75" />
+          </label>
+          <label>
+            Workflow Maturity
+            <select id="maturitySelect">
+              <option>fragmented</option>
+              <option selected>developing</option>
+              <option>scaled</option>
+            </select>
+          </label>
+        </div>
+        <button id="runSimulator" class="button button-secondary">Generate Deployment Plan</button>
+        <div id="simulatorPanel" class="detail-panel" style="margin-top: 1rem;">
+          <p>Run the simulator to see workflow gaps and standardization opportunities.</p>
         </div>
       </section>
     </main>
