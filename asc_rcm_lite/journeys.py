@@ -15,6 +15,7 @@ from asc_rcm_lite.operations import (
     TaskOutcome,
 )
 from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, run_pipeline
+from asc_rcm_lite.work_objects import build_work_objects, serialize_work_object
 from asc_rcm_lite.workflow.actions import apply_workflow_action
 from asc_rcm_lite.workflow.state import WorkflowItem
 
@@ -92,6 +93,15 @@ def available_journeys() -> tuple[str, ...]:
     return ("ar_specialist", "ar_manager", "vp_revenue_cycle")
 
 
+def available_workflow_journeys() -> tuple[str, ...]:
+    return (
+        "missing_documentation_denial",
+        "medical_necessity_appeal",
+        "ar_follow_up",
+        "authorization_failure",
+    )
+
+
 def execute_journey(journey_id: str, *, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
     if journey_id == "ar_specialist":
         return execute_ar_specialist_journey(as_of_date=as_of_date)
@@ -100,6 +110,18 @@ def execute_journey(journey_id: str, *, as_of_date: str = DEFAULT_AS_OF_DATE) ->
     if journey_id == "vp_revenue_cycle":
         return execute_vp_revenue_cycle_journey(as_of_date=as_of_date)
     raise ValueError(f"Unsupported journey: {journey_id}")
+
+
+def execute_workflow_journey(journey_id: str, *, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    if journey_id == "missing_documentation_denial":
+        return execute_missing_documentation_denial_journey(as_of_date=as_of_date)
+    if journey_id == "medical_necessity_appeal":
+        return execute_medical_necessity_appeal_journey(as_of_date=as_of_date)
+    if journey_id == "ar_follow_up":
+        return execute_ar_follow_up_workflow_journey(as_of_date=as_of_date)
+    if journey_id == "authorization_failure":
+        return execute_authorization_failure_journey(as_of_date=as_of_date)
+    raise ValueError(f"Unsupported workflow journey: {journey_id}")
 
 
 def execute_ar_specialist_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
@@ -534,6 +556,144 @@ def execute_vp_revenue_cycle_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) ->
             "playbooks_reinforced": ["Revenue Recovery", "Denial Excellence", "Authorization Excellence"],
             "portfolio_learning": "Leadership actions now connect payer trends, workflow failures, and value creation initiatives.",
         },
+        workflow_trace=tuple(),
+    )
+
+
+def execute_missing_documentation_denial_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    pipeline = run_pipeline(case_id="ASC-CASE-004", as_of_date=as_of_date)
+    case = next(case for case in load_asc_cases() if case.case_id == "ASC-CASE-004")
+    task = next(task for task in pipeline.cases[0].operational_tasks if task.workflow_id == "asc_denial_review")
+    work_object = serialize_work_object(
+        build_work_objects(cases=(case,), tasks=(task,), workflows=pipeline.workflow_definitions, as_of_date=as_of_date)[0]
+    )
+    work_object["work_object_type"] = "Missing Documentation"
+    work_object["title"] = "Missing Documentation Denial"
+    return OperationalJourneyRun(
+        journey_id="missing_documentation_denial",
+        persona="Denial Specialist",
+        title="Missing Documentation Denial",
+        scenario="Claim -> denial -> classification -> evidence collection -> packet assembly -> submission -> resolution.",
+        queue_snapshot=work_object,
+        payer_history=tuple(),
+        claim_history=tuple(),
+        prior_follow_up_activity=tuple(),
+        recommendation_history=tuple(work_object["recommendations"]),
+        steps=(
+            JourneyStep("1", "Claim", "denial_specialist", "Agent Processing", "Human Action Required", "Denied claim is surfaced as a missing-documentation work object."),
+            JourneyStep("2", "Denial", "denial_specialist", "Human Action Required", "Human Action Required", "Denial is classified and linked to missing supporting documentation."),
+            JourneyStep("3", "Classification", "denial_specialist", "Human Action Required", "Human Action Required", "Workflow is routed into denial review with claim-linked evidence."),
+            JourneyStep("4", "Evidence Collection", "denial_specialist", "Human Action Required", "Human Action Required", "Payer rule, denial text, and supporting documentation checklist are assembled."),
+            JourneyStep("5", "Packet Assembly", "denial_specialist", "Human Action Required", "Human Action Required", "Appeal packet and claim timeline are generated as usable work product."),
+            JourneyStep("6", "Submission", "denial_specialist", "Human Action Required", "Completed", "Appeal is submitted with assembled documentation."),
+            JourneyStep("7", "Resolution", "denial_specialist", "Completed", "Completed", "Outcome, timeline, and memory are recorded for reuse.", financial_impact=Decimal("2950.00")),
+        ),
+        metrics_before={"open_work": 1, "timeline_events": len(work_object["timeline"]), "financial_impact": work_object["financial_impact"]},
+        metrics_after={"open_work": 0, "timeline_events": len(work_object["timeline"]), "financial_impact": work_object["outcome"]["financial_result"]},
+        final_task=work_object,
+        final_outcome=work_object["outcome"],
+        institutional_memory_update={"entries": len(work_object["institutional_memory"]), "timeline_events": len(work_object["timeline"])},
+        workflow_trace=tuple(),
+    )
+
+
+def execute_medical_necessity_appeal_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    pipeline = run_pipeline(case_id="ASC-CASE-004", as_of_date=as_of_date)
+    case = next(case for case in load_asc_cases() if case.case_id == "ASC-CASE-004")
+    task = next(task for task in pipeline.cases[0].operational_tasks if task.task_type == "medical_necessity")
+    work_object = serialize_work_object(
+        build_work_objects(cases=(case,), tasks=(task,), workflows=pipeline.workflow_definitions, as_of_date=as_of_date)[0]
+    )
+    return OperationalJourneyRun(
+        journey_id="medical_necessity_appeal",
+        persona="Denial Specialist",
+        title="Medical Necessity Appeal",
+        scenario="Claim -> denial -> clinical evidence -> appeal packet -> submission -> decision.",
+        queue_snapshot=work_object,
+        payer_history=tuple(),
+        claim_history=tuple(),
+        prior_follow_up_activity=tuple(),
+        recommendation_history=tuple(work_object["recommendations"]),
+        steps=(
+            JourneyStep("1", "Claim", "denial_specialist", "Agent Processing", "Human Action Required", "Claim lands with a medical-necessity denial work object."),
+            JourneyStep("2", "Denial", "denial_specialist", "Human Action Required", "Human Action Required", "Denial category and payer rationale are surfaced."),
+            JourneyStep("3", "Clinical Evidence", "denial_specialist", "Human Action Required", "Human Action Required", "Clinical support, payer rule, and similar outcomes are assembled."),
+            JourneyStep("4", "Appeal Packet", "denial_specialist", "Human Action Required", "Human Action Required", "Operator receives an appeal packet, claim timeline, and checklist."),
+            JourneyStep("5", "Submission", "denial_specialist", "Human Action Required", "Completed", "Appeal is submitted using the generated work product."),
+            JourneyStep("6", "Decision", "denial_specialist", "Completed", "Completed", "Result is recorded back into the work object and institutional memory.", financial_impact=Decimal("768.00")),
+        ),
+        metrics_before={"open_work": 1, "documents_generated": len(work_object["documents"]), "financial_impact": work_object["financial_impact"]},
+        metrics_after={"open_work": 0, "documents_generated": len(work_object["documents"]), "financial_impact": work_object["outcome"]["financial_result"]},
+        final_task=work_object,
+        final_outcome=work_object["outcome"],
+        institutional_memory_update={"entries": len(work_object["institutional_memory"]), "documents": len(work_object["documents"])},
+        workflow_trace=tuple(),
+    )
+
+
+def execute_ar_follow_up_workflow_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    pipeline = run_pipeline(case_id="ASC-CASE-008", as_of_date=as_of_date)
+    case = next(case for case in load_asc_cases() if case.case_id == "ASC-CASE-008")
+    task = next(task for task in pipeline.cases[0].operational_tasks if task.workflow_id == "asc_ar_followup")
+    work_object = serialize_work_object(
+        build_work_objects(cases=(case,), tasks=(task,), workflows=pipeline.workflow_definitions, as_of_date=as_of_date)[0]
+    )
+    work_object["financial_impact"] = "12500.00"
+    run = execute_ar_specialist_journey(as_of_date=as_of_date)
+    return OperationalJourneyRun(
+        journey_id="ar_follow_up",
+        persona=run.persona,
+        title="AR Follow-Up",
+        scenario="Claim -> aging trigger -> follow-up -> escalation -> recovery.",
+        queue_snapshot=work_object,
+        payer_history=run.payer_history,
+        claim_history=run.claim_history,
+        prior_follow_up_activity=run.prior_follow_up_activity,
+        recommendation_history=run.recommendation_history,
+        steps=(
+            JourneyStep("1", "Claim", "biller", "Agent Processing", "Human Action Required", "Claim is open and aging without payment."),
+            JourneyStep("2", "Aging Trigger", "biller", "Human Action Required", "Human Action Required", "90+ day trigger converts the claim into an AR follow-up work object."),
+            JourneyStep("3", "Follow-Up", "biller", "Human Action Required", "Human Action Required", "Operator reviews evidence and executes payer outreach."),
+            JourneyStep("4", "Escalation", "biller", "Human Action Required", "Human Action Required", "Escalation path is visible if payer response fails."),
+            JourneyStep("5", "Recovery", "biller", "Human Action Required", "Completed", "Recovered dollars, timeline, and memory are recorded.", financial_impact=Decimal("12500.00")),
+        ),
+        metrics_before=run.metrics_before,
+        metrics_after=run.metrics_after,
+        final_task=run.final_task,
+        final_outcome=run.final_outcome,
+        institutional_memory_update=run.institutional_memory_update,
+        workflow_trace=run.workflow_trace,
+    )
+
+
+def execute_authorization_failure_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    pipeline = run_pipeline(case_id="ASC-CASE-002", as_of_date=as_of_date)
+    case = next(case for case in load_asc_cases() if case.case_id == "ASC-CASE-002")
+    task = next(task for task in pipeline.cases[0].operational_tasks if task.workflow_id == "asc_authorization")
+    work_object = serialize_work_object(
+        build_work_objects(cases=(case,), tasks=(task,), workflows=pipeline.workflow_definitions, as_of_date=as_of_date)[0]
+    )
+    return OperationalJourneyRun(
+        journey_id="authorization_failure",
+        persona="Authorization Specialist",
+        title="Authorization Failure",
+        scenario="Scheduled case -> missing auth -> coordination -> resolution.",
+        queue_snapshot=work_object,
+        payer_history=tuple(),
+        claim_history=tuple(),
+        prior_follow_up_activity=tuple(),
+        recommendation_history=tuple(work_object["recommendations"]),
+        steps=(
+            JourneyStep("1", "Scheduled Case", "auth_specialist", "Agent Processing", "Human Action Required", "Scheduled case is linked to a missing-authorization work object."),
+            JourneyStep("2", "Missing Auth", "auth_specialist", "Human Action Required", "Human Action Required", "Authorization failure is classified with payer rule evidence."),
+            JourneyStep("3", "Coordination", "auth_specialist", "Human Action Required", "Human Action Required", "Authorization packet and checklist are generated for payer/provider coordination."),
+            JourneyStep("4", "Resolution", "auth_specialist", "Human Action Required", "Completed", "Resolution and financial impact are written back into the work object.", financial_impact=Decimal("1152.00")),
+        ),
+        metrics_before={"open_work": 1, "documents_generated": len(work_object["documents"]), "financial_impact": work_object["financial_impact"]},
+        metrics_after={"open_work": 0, "documents_generated": len(work_object["documents"]), "financial_impact": work_object["outcome"]["financial_result"]},
+        final_task=work_object,
+        final_outcome=work_object["outcome"],
+        institutional_memory_update={"entries": len(work_object["institutional_memory"]), "timeline_events": len(work_object["timeline"])},
         workflow_trace=tuple(),
     )
 

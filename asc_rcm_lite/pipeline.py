@@ -96,7 +96,7 @@ def run_pipeline(
         manager_metrics=manager_summary(queue),
         operational_metrics=build_operational_dashboard(tasks),
         workflow_definitions=workflow_catalog(),
-        portfolio_snapshot=build_portfolio_snapshot(tasks, workflow_catalog()),
+        portfolio_snapshot=build_portfolio_snapshot(tasks, workflow_catalog(), cases=tuple(cases), as_of_date=as_of_date),
     )
 
 

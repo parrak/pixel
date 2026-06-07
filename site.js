@@ -87,9 +87,9 @@ function renderMetrics(holdcoDashboard) {
 
 function renderLeadershipFocus(holdcoDashboard, executiveReview) {
   mondayPanel.innerHTML = `
-    <strong>What leadership should focus on today</strong>
+    <strong>What work should get done next</strong>
     <ul>${holdcoDashboard.focus_today.map((line) => `<li>${line}</li>`).join("")}</ul>
-    <p><strong>Required decisions:</strong> ${executiveReview.required_decisions.join(" | ")}</p>
+    <p><strong>Workflow pressure:</strong> ${holdcoDashboard.critical_bottlenecks.join(" | ")}</p>
   `;
 }
 
@@ -137,29 +137,34 @@ function renderOrganization(organization, portfolio) {
 }
 
 function renderRole(roleEntry, organization, portfolio) {
-  const initiative = portfolio.value_creation_initiatives.find((item) =>
-    item.organization_ids.includes(organization.organization_id)
-  ) || portfolio.value_creation_initiatives[0];
+  const workObject = portfolio.work_objects.find((item) =>
+    item.organization_id === organization.organization_id && item.owner_role === roleEntry.role
+  ) || portfolio.work_objects.find((item) => item.organization_id === organization.organization_id);
   const pattern = portfolio.decision_intelligence.patterns.find((item) => item.organization === organization.name);
   recommendationPanel.innerHTML = `
-    <strong>${initiative.name}</strong>
-    <p><strong>Owner:</strong> ${initiative.owner_name} · ${initiative.owner_title}</p>
-    <p><strong>Target:</strong> ${initiative.target}</p>
-    <p><strong>Expected EBITDA impact:</strong> ${formatMoney(initiative.expected_ebitda_impact)}</p>
-    <p>${initiative.operational_link}</p>
+    <strong>${workObject.title}</strong>
+    <p><strong>Type:</strong> ${workObject.work_object_type}</p>
+    <p><strong>Financial impact:</strong> ${formatMoney(workObject.financial_impact)}</p>
+    <p><strong>Status:</strong> ${workObject.status} / ${workObject.workflow_status}</p>
+    <p><strong>Recommendation:</strong> ${workObject.recommendations[0].title}</p>
   `;
-  decisionPanel.innerHTML = pattern ? `
+  decisionPanel.innerHTML = workObject ? `
+    <strong>${workObject.timeline[0].label}</strong>
+    <p><strong>Evidence:</strong> ${workObject.evidence[0].title}</p>
+    <p><strong>Detail:</strong> ${workObject.evidence[0].detail}</p>
+    <p><strong>Next:</strong> ${workObject.timeline[workObject.timeline.length - 1].next_step}</p>
+  ` : (pattern ? `
     <strong>${pattern.workflow}</strong>
     <p><strong>Playbook:</strong> ${pattern.playbook}</p>
     <p><strong>Decision owner:</strong> ${pattern.owner}</p>
     <p><strong>Outcome:</strong> ${pattern.outcome}</p>
-  ` : "<p>No decision intelligence available.</p>";
+  ` : "<p>No decision intelligence available.</p>");
   outcomePanel.innerHTML = `
-    <strong>${organization.name} executive outcome</strong>
+    <strong>${organization.name} outcome</strong>
     <p><strong>Role queue:</strong> ${roleEntry.label}</p>
     <p><strong>Completed outcomes:</strong> ${roleEntry.completed_outcomes}</p>
     <p><strong>Financial result:</strong> ${formatMoney(roleEntry.financial_result)}</p>
-    <p><strong>Urgent tasks:</strong> ${organization.operational_health.urgent_tasks}</p>
+    <p><strong>Institutional memory:</strong> ${workObject.institutional_memory[0].summary}</p>
   `;
 }
 

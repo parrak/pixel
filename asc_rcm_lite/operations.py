@@ -637,7 +637,13 @@ def build_operational_dashboard(tasks: tuple[OperationalTask, ...]) -> dict[str,
     }
 
 
-def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tuple[WorkflowDefinition, ...]) -> dict[str, object]:
+def build_portfolio_snapshot(
+    tasks: tuple[OperationalTask, ...],
+    workflows: tuple[WorkflowDefinition, ...],
+    *,
+    cases: tuple[ASCCase, ...] = (),
+    as_of_date: str | None = None,
+) -> dict[str, object]:
     blueprint = _portfolio_blueprint()
     holdco = blueprint["holdco"]
     organizations = blueprint["organizations"]
@@ -762,6 +768,15 @@ def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tupl
     decision_intelligence = _build_decision_intelligence(tasks, initiatives, playbooks)
     executive_review = _build_executive_review(holdco_dashboard, org_summaries, initiatives, benchmarking, decision_intelligence)
 
+    work_objects_payload = []
+    if cases and as_of_date is not None:
+        from asc_rcm_lite.work_objects import build_work_objects, serialize_work_object
+
+        work_objects_payload = [
+            serialize_work_object(item)
+            for item in build_work_objects(cases=cases, tasks=tasks, workflows=workflows, as_of_date=as_of_date)
+        ]
+
     return {
         "holdco": {
             "holdco_id": holdco.holdco_id,
@@ -875,6 +890,7 @@ def build_portfolio_snapshot(tasks: tuple[OperationalTask, ...], workflows: tupl
             }
             for item in playbooks
         ],
+        "work_objects": work_objects_payload,
         "decision_intelligence": decision_intelligence,
         "executive_operating_review": executive_review,
         "acquisition_defaults": {

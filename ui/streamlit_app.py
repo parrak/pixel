@@ -55,7 +55,7 @@ def _format_number(value: object) -> str:
     return str(value)
 
 
-st.set_page_config(page_title="Citron Health HoldCo Command Center", layout="wide")
+st.set_page_config(page_title="Citron Health Workflow System", layout="wide")
 st.markdown(f"<style>{THEME_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 st.markdown(
     """
@@ -143,16 +143,17 @@ result = run_pipeline(as_of_date=DEFAULT_AS_OF_DATE)
 portfolio = result.portfolio_snapshot
 all_tasks = [task for case in result.cases for task in case.operational_tasks]
 all_cases = {case.case_id: case for case in result.cases}
+all_work_objects = portfolio.get("work_objects", [])
 orgs = portfolio["organizations"]
 org_names = [org["name"] for org in orgs]
 st.sidebar.image(str(LOGO_PATH), width=44)
 st.sidebar.markdown(
     """
     <div class="brand-lockup" style="margin-bottom:0.9rem;">
-      <div class="brand-wordmark">
-        <div class="brand-title">Citron<b> Health</b></div>
-        <div class="brand-subtitle">Operator Operating System</div>
-      </div>
+        <div class="brand-wordmark">
+          <div class="brand-title">Citron<b> Health</b></div>
+          <div class="brand-subtitle">Workflow System Of Record</div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -163,11 +164,19 @@ selected_role = st.sidebar.selectbox("Role View", [ROLE_LABELS[key] for key in R
 selected_role_key = next(key for key, value in ROLE_LABELS.items() if value == selected_role)
 org_tasks = [task for task in all_tasks if task.organization_name == selected_org_name]
 role_tasks = [task for task in org_tasks if task.owner_role == selected_role_key] or org_tasks
-selected_task_label = st.sidebar.selectbox(
-    "Task",
-    [f"{task.task_id} | {task.title}" for task in role_tasks],
+role_work_objects = [
+    item
+    for item in all_work_objects
+    if item["organization_name"] == selected_org_name and item["owner_role"] == selected_role_key
+] or [
+    item for item in all_work_objects if item["organization_name"] == selected_org_name
+]
+selected_work_object_label = st.sidebar.selectbox(
+    "Work Object",
+    [f"{item['work_object_id']} | {item['title']}" for item in role_work_objects],
 )
-selected_task = next(task for task in role_tasks if f"{task.task_id} | {task.title}" == selected_task_label)
+selected_work_object = next(item for item in role_work_objects if f"{item['work_object_id']} | {item['title']}" == selected_work_object_label)
+selected_task = next(task for task in role_tasks if task.task_id == selected_work_object["task_id"])
 selected_case = all_cases[selected_task.case_id]
 selected_workflow = st.sidebar.selectbox("Workflow", [workflow.name for workflow in result.workflow_definitions], index=0)
 
@@ -178,15 +187,15 @@ st.markdown(
         <img class="brand-mark" src="{LOGO_DATA_URI}" alt="Citron Health logo" />
         <div class="brand-wordmark">
           <div class="brand-title" style="color:#f8f7f2;">Citron<b style="color:#cfe84f;"> Health</b></div>
-          <div class="brand-subtitle" style="color:#d8f0c7;">Specialty Revenue Cycle OS</div>
+          <div class="brand-subtitle" style="color:#d8f0c7;">Workflow System Of Record</div>
         </div>
       </div>
-      <div class="eyebrow">Citron Health Phase 4</div>
-      <h1 style="margin:0.2rem 0 0.5rem 0;">HoldCo Command Center</h1>
+      <div class="eyebrow">Workflow-Native Reset</div>
+      <h1 style="margin:0.2rem 0 0.5rem 0;">Work Begins With The Work Object</h1>
       <p style="margin:0;max-width:58rem;">
-        Citron exists to make acquired specialty RCM businesses better operators and more valuable assets. The center
-        of gravity is now acquisition, standardization, operational improvement, knowledge compounding, EBITDA
-        expansion, and enterprise value creation.
+        Citron exists to help AR, denial, authorization, and coding teams resolve work. The primary object is now the
+        work object: claim-linked operational work with a visible timeline, evidence, generated work product, actions,
+        outcome, and institutional memory.
       </p>
     </div>
     """,
@@ -222,6 +231,7 @@ metric_cols[4].markdown(
 
 tabs = st.tabs(
     [
+        "Work Queue",
         "Operational Journeys",
         "HoldCo Command Center",
         "Value Creation",
@@ -238,6 +248,53 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
+    st.subheader(f"{selected_role} Work Queue")
+    st.caption("Operators begin with work. Each item is a workflow-native work object with its own timeline, evidence, work product, actions, outcome, and memory.")
+    work_rows = [
+        {
+            "work_object_id": item["work_object_id"],
+            "type": item["work_object_type"],
+            "title": item["title"],
+            "priority": item["priority"],
+            "status": item["status"],
+            "workflow_status": item["workflow_status"],
+            "financial_impact": _format_money(item["financial_impact"]),
+            "owner": item["owner_name"] or ROLE_LABELS.get(item["owner_role"], item["owner_role"]),
+        }
+        for item in role_work_objects
+    ]
+    st.dataframe(work_rows, use_container_width=True)
+    summary_left, summary_right = st.columns([1.05, 0.95])
+    summary_left.markdown(
+        f"""
+        <div class="card">
+          <div class="eyebrow">{selected_work_object['work_object_type']}</div>
+          <h3 style="margin:0.2rem 0 0.6rem 0;">{selected_work_object['title']}</h3>
+          {_priority_badge(selected_work_object['priority'])}
+          <span class="badge badge-normal">{selected_work_object['status']}</span>
+          <p style="margin-top:0.8rem;"><strong>Financial Impact:</strong> {_format_money(selected_work_object['financial_impact'])}<br/>
+          <strong>Owner:</strong> {selected_work_object['owner_name'] or ROLE_LABELS.get(selected_work_object['owner_role'], selected_work_object['owner_role'])}<br/>
+          <strong>Account:</strong> {selected_work_object['account_id']}<br/>
+          <strong>Claim:</strong> {selected_work_object['claim_id'] or '-'}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    summary_right.json(
+        {
+            "outcome": selected_work_object["outcome"],
+            "recommendations": selected_work_object["recommendations"],
+            "actions": selected_work_object["actions"],
+        }
+    )
+    timeline_col, evidence_col = st.columns(2)
+    timeline_col.dataframe(selected_work_object["timeline"], use_container_width=True)
+    evidence_col.dataframe(selected_work_object["evidence"], use_container_width=True)
+    docs_col, memory_col = st.columns(2)
+    docs_col.dataframe(selected_work_object["documents"], use_container_width=True)
+    memory_col.dataframe(selected_work_object["institutional_memory"], use_container_width=True)
+
+with tabs[1]:
     st.subheader("End-to-End Operational Journeys")
     st.caption("Run a realistic day-in-the-life workflow from queue identification through decision, outcome, and impact.")
     journey_options = {
@@ -277,7 +334,7 @@ with tabs[0]:
         history_right.json({"claim_history": journey["claim_history"]})
         history_third.json({"prior_follow_up_activity": journey["prior_follow_up_activity"]})
 
-with tabs[1]:
+with tabs[2]:
     st.subheader("HoldCo Dashboard")
     st.caption("What should leadership focus on today across the specialty RCM platform?")
     lead_left, lead_right = st.columns([1.05, 0.95])
@@ -329,7 +386,7 @@ with tabs[1]:
         }
     )
 
-with tabs[2]:
+with tabs[3]:
     st.subheader("Value Creation System")
     st.caption("Operational changes tied directly to expected and realized EBITDA impact.")
     initiative_rows = [
@@ -348,7 +405,7 @@ with tabs[2]:
     selected_initiative = portfolio["value_creation_initiatives"][0]
     st.json(selected_initiative)
 
-with tabs[3]:
+with tabs[4]:
     st.subheader("Portfolio Benchmarking")
     st.caption("Compare every organization to the portfolio average, top quartile, and best-in-class.")
     benchmark_org = next(item for item in portfolio["portfolio_benchmarks"]["organizations"] if item["name"] == selected_org_name)
@@ -367,7 +424,7 @@ with tabs[3]:
     st.dataframe(benchmark_rows, use_container_width=True)
     st.info(portfolio["portfolio_benchmarks"]["narrative"])
 
-with tabs[4]:
+with tabs[5]:
     st.subheader("Playbook System")
     st.caption("Reusable operating playbooks standardize acquired operators across the platform.")
     selected_playbook_name = st.selectbox("Playbook", [item["name"] for item in portfolio["playbooks"]], key="playbook_selector")
@@ -385,7 +442,7 @@ with tabs[4]:
     st.dataframe(playbook_rows, use_container_width=True)
     st.json(playbook)
 
-with tabs[5]:
+with tabs[6]:
     review = portfolio["executive_operating_review"]
     st.subheader("Executive Operating Review")
     st.caption("Monthly board-style readout for leadership, operating partners, and future executives.")
@@ -406,7 +463,7 @@ with tabs[5]:
     )
     st.json({"risks": review["risks"], "wins": review["wins"], "benchmark_excerpt": review["benchmark_excerpt"]})
 
-with tabs[6]:
+with tabs[7]:
     monday = portfolio["monday_morning"]
     st.subheader(monday["title"])
     st.caption("Guided day-in-the-life experience for an acquired ASC operator running inside Citron.")
@@ -422,7 +479,7 @@ with tabs[6]:
     assign.json({"assignments": monday["assignments"], "critical_work": monday["critical_work"]})
     outcomes.json({"workflow_bottlenecks": monday["workflow_bottlenecks"], "outcomes": monday["outcomes"]})
 
-with tabs[7]:
+with tabs[8]:
     st.subheader(f"{selected_role} Queue")
     st.caption(f"Operational queue for {selected_org_name}. This view is role-first rather than detector-first.")
     role_rows = [
@@ -475,7 +532,7 @@ with tabs[7]:
         unsafe_allow_html=True,
     )
 
-with tabs[8]:
+with tabs[9]:
     st.subheader("Decision Intelligence Foundation")
     st.caption("Recommendation -> decision -> outcome memory with portfolio-wide visibility into what creates value.")
     st.json(decision_intelligence["summary"])
@@ -511,7 +568,7 @@ with tabs[8]:
             }
         )
 
-with tabs[9]:
+with tabs[10]:
     st.subheader("Workflow Definition Engine")
     st.caption("Workflow definitions are configuration-backed and future specialties can plug into the same engine.")
     workflow = next(workflow for workflow in result.workflow_definitions if workflow.name == selected_workflow)
@@ -537,7 +594,7 @@ with tabs[9]:
     ]
     st.dataframe(stage_rows, use_container_width=True)
 
-with tabs[10]:
+with tabs[11]:
     st.subheader("Acquisition Integration Center")
     st.caption("Post-acquisition integration experience that translates workflow standardization into value creation.")
     col1, col2, col3 = st.columns(3)
@@ -575,7 +632,7 @@ with tabs[10]:
         }
     )
 
-with tabs[11]:
+with tabs[12]:
     st.subheader("Legacy Features")
     st.caption("Existing ASC RCM features remain in the system as workflow-supporting modules.")
     legacy_tabs = st.tabs(["Coding", "A/R", "Denials", "Workflow Assistant", "Payer Intelligence", "Case Detail"])
