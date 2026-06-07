@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Citron Health | Try Citron</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">Citron Health</a>
+      <nav class="nav">
+        <a href="/demo">Try Citron</a>
+        <a href="/architecture">Architecture</a>
+        <a href="/about">About</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-hero">
+        <span class="eyebrow">Interactive Demo</span>
+        <h1>Load a synthetic ASC organization</h1>
+        <p>
+          Explore queues, inspect recommendations, record a decision, and see the synthetic outcome.
+          No login required.
+        </p>
+      </section>
+
+      <section class="demo-toolbar">
+        <button id="loadDemo" class="button button-primary">Load Synthetic ASC</button>
+        <div class="demo-metrics" id="demoMetrics"></div>
+      </section>
+
+      <section class="demo-grid">
+        <div class="story-card">
+          <h2>Queues</h2>
+          <div id="queueList" class="queue-list"></div>
+        </div>
+        <div class="story-card">
+          <h2>Recommendation</h2>
+          <div id="recommendationPanel" class="detail-panel">
+            <p>Load the synthetic organization to begin.</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <h2>Decision</h2>
+          <div id="decisionPanel" class="detail-panel">
+            <p>Pick a task to record a decision.</p>
+          </div>
+        </div>
+        <div class="story-card">
+          <h2>Outcome</h2>
+          <div id="outcomePanel" class="detail-panel">
+            <p>Outcomes appear after a synthetic human decision.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Citron Health</span>
+      <div>
+        <a href="/demo">Try Citron</a>
+        <a href="/architecture">Architecture</a>
+        <a href="/about">About</a>
+      </div>
+    </footer>
+
+    <script src="/site.js"></script>
+  </body>
+</html>

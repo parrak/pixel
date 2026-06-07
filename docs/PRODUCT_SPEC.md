@@ -2,7 +2,11 @@
 
 ## North Star
 
-Build a synthetic ASC/surgical RCM copilot that helps reviewers identify revenue-cycle work, understand why it matters, see cited evidence, and generate reviewer-safe drafts without automating final coding, billing, compliance, or payer decisions.
+Build a synthetic specialty RCM operating system that helps teams manage work as:
+
+Task -> Recommendation -> Human Decision -> Outcome
+
+without automating final coding, billing, compliance, or payer decisions.
 
 ## Users
 
@@ -14,6 +18,9 @@ Build a synthetic ASC/surgical RCM copilot that helps reviewers identify revenue
 
 ## Core Product Areas
 
+- Operations Command Center
+- Manager Dashboard
+- Workflow Engine
 - AI Coding Copilot
 - A/R Flagging Copilot
 - Denials and Appeals Copilot
@@ -22,6 +29,7 @@ Build a synthetic ASC/surgical RCM copilot that helps reviewers identify revenue
 - Work Queue Prioritization
 - Reviewer Packets and Drafts
 - Streamlit Workbench
+- Public interactive demo
 - Copilot Eval Harness
 
 ## Hard Product Boundaries
@@ -35,7 +43,10 @@ Build a synthetic ASC/surgical RCM copilot that helps reviewers identify revenue
 
 ## Primary Outputs
 
-- Evidence-cited opportunities
+- Operational tasks
+- Evidence-backed recommendations
+- Human decisions
+- Outcomes
 - Priority-scored work queue items
 - Role-aware workflow suggestions
 - Reviewer packets

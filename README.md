@@ -1,13 +1,19 @@
 # Citron Health
 
-Citron Health is a synthetic ambulatory surgery center and surgical revenue-cycle copilot prototype. It helps coders, billers, denial specialists, auth specialists, and managers identify work, review cited evidence, understand why it matters, and generate reviewer-safe drafts.
+Citron Health is a synthetic specialty RCM operating-system prototype. It helps coders, billers, denial specialists, auth specialists, and managers manage work as:
+
+Task -> Recommendation -> Human Decision -> Outcome
+
+across specialty revenue-cycle workflows.
 
 The product is deterministic-first. Synthetic rules, synthetic payer policies, and synthetic contract references are the source of truth. Copilot output is assistive only.
 
 ## Positioning
 
-- Synthetic ASC/surgical RCM workflow prototype
+- Synthetic ASC/surgical specialty RCM operating-system prototype
+- Operations Command Center, manager dashboard, workflow engine, and public demo site
 - Deterministic detectors for coding QA, A/R, denials, workflow routing, and payer intelligence
+- Existing copilot outputs preserved as producers of recommendations and operational tasks
 - Reviewer-safe drafts, packets, queue prioritization, and Streamlit workbench
 - Local-only by default with a swappable mock copilot provider
 
@@ -31,6 +37,14 @@ The product is deterministic-first. Synthetic rules, synthetic payer policies, a
 - Workflow: role-aware action suggestions, audit trace, queue routing, escalation support
 - Payer intelligence: synthetic denial patterns, payer friction, top root causes, top recoverable A/R patterns
 
+## Phase 2 Product Surfaces
+
+- Operations Command Center
+- Manager Dashboard
+- Workflow Engine
+- Legacy copilot surfaces retained as supporting producers
+- Static public citron.health site with interactive synthetic demo
+
 ## Copilot Surfaces
 
 - `asc_rcm_lite/copilot/coding_copilot.py`
@@ -39,6 +53,13 @@ The product is deterministic-first. Synthetic rules, synthetic payer policies, a
 - `asc_rcm_lite/copilot/workflow_assistant.py`
 - `asc_rcm_lite/copilot/payer_intelligence_copilot.py`
 - `ui/streamlit_app.py`
+
+## Operating-System Surfaces
+
+- `asc_rcm_lite/operations.py`
+- `docs/PHASE2_ARCHITECTURE_ASSESSMENT.md`
+- `docs/PHASE2_IMPLEMENTATION_PLAN.md`
+- `index.html`, `demo.html`, `architecture.html`, `about.html`
 
 ## Quickstart
 
@@ -58,9 +79,12 @@ uv run streamlit run ui/streamlit_app.py
 
 ## Vercel Deployment
 
-This repository now exposes a top-level WSGI app at `app.py`, which matches Vercel's Python entrypoint requirements. The deployed surface provides:
+This repository exposes a branded static site for the public citron.health surface and retains Python-powered Vercel functions for JSON and demo endpoints. The deployed surface provides:
 
-- `/`: HTML dashboard for the synthetic ASC RCM workbench
+- `/`: marketing landing page
+- `/demo`: interactive synthetic demo
+- `/architecture`: architecture page
+- `/about`: about page
 - `/api/summary`: pipeline summary JSON
 - `/api/case?case_id=ASC-CASE-008`: per-case JSON
 - `/health`: deployment health check
@@ -119,4 +143,4 @@ vercel deploy --prebuilt --prod
 - The mock copilot provider is local and template-based rather than model-backed.
 - Some opportunity classes are represented by the current synthetic scenarios more richly than others.
 
-See [docs/COMPLIANCE_GUARDRAILS.md](/Users/rakes/.codex/worktrees/a754/pixel/docs/COMPLIANCE_GUARDRAILS.md), [docs/PRODUCT_SPEC.md](/Users/rakes/.codex/worktrees/a754/pixel/docs/PRODUCT_SPEC.md), and [docs/COPILOT_DEMO_SCRIPT.md](/Users/rakes/.codex/worktrees/a754/pixel/docs/COPILOT_DEMO_SCRIPT.md) for more detail.
+See [docs/COMPLIANCE_GUARDRAILS.md](/Users/rakes/Documents/pixel/docs/COMPLIANCE_GUARDRAILS.md), [docs/PRODUCT_SPEC.md](/Users/rakes/Documents/pixel/docs/PRODUCT_SPEC.md), [docs/PHASE2_ARCHITECTURE_ASSESSMENT.md](/Users/rakes/Documents/pixel/docs/PHASE2_ARCHITECTURE_ASSESSMENT.md), and [docs/PHASE2_IMPLEMENTATION_PLAN.md](/Users/rakes/Documents/pixel/docs/PHASE2_IMPLEMENTATION_PLAN.md) for more detail.

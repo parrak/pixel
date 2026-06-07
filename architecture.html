@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Citron Health | Architecture</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">Citron Health</a>
+      <nav class="nav">
+        <a href="/demo">Try Citron</a>
+        <a href="/architecture">Architecture</a>
+        <a href="/about">About</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-hero">
+        <span class="eyebrow">Architecture</span>
+        <h1>Workflow engine meets decision memory</h1>
+        <p>
+          Citron is designed around first-class workflows, recommendations, operator decisions,
+          and outcome tracking rather than isolated copilot surfaces.
+        </p>
+      </section>
+
+      <section class="stack-grid">
+        <article class="story-card">
+          <h2>Workflow Engine</h2>
+          <p>
+            Workflow definitions encode queue semantics, owners, service expectations, trigger
+            sources, and target outcomes for ASC authorization, coding review, denials, appeals,
+            charge capture, and follow-up work.
+          </p>
+        </article>
+        <article class="story-card">
+          <h2>Decision Memory</h2>
+          <p>
+            Every recommendation is paired with an explicit human decision. Accepted, escalated,
+            and rejected actions become structured memory for how the operation actually runs.
+          </p>
+        </article>
+        <article class="story-card">
+          <h2>Outcome Tracking</h2>
+          <p>
+            Citron ties work to what happened next: revenue recovered, denial prevented, turnaround
+            improved, or task rerouted. The point is operational learning, not just suggestion volume.
+          </p>
+        </article>
+        <article class="story-card">
+          <h2>Operational Intelligence</h2>
+          <p>
+            Existing detectors and copilots become producers in a broader system. The platform can
+            compare queue aging, bottlenecks, recovery pipeline, and workflow health in one place.
+          </p>
+        </article>
+      </section>
+
+      <section class="architecture-flow">
+        <div class="flow-node">
+          <h3>Producers</h3>
+          <p>Coding QA, denials, AR, seeded workflow signals, and payer intelligence.</p>
+        </div>
+        <div class="flow-node">
+          <h3>Operating Layer</h3>
+          <p>Task, recommendation, decision, outcome, workflow state, and queue orchestration.</p>
+        </div>
+        <div class="flow-node">
+          <h3>Product Surfaces</h3>
+          <p>Operations Command Center, manager dashboard, workflow engine, and interactive demo.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Citron Health</span>
+      <div>
+        <a href="/demo">Try Citron</a>
+        <a href="/architecture">Architecture</a>
+        <a href="/about">About</a>
+      </div>
+    </footer>
+  </body>
+</html>

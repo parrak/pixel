@@ -33,3 +33,13 @@ def test_pipeline_summary_includes_manager_level_metrics():
     result = run_pipeline()
     assert "total_items" in result.manager_metrics
 
+
+def test_pipeline_includes_operational_metrics_and_workflow_definitions():
+    result = run_pipeline()
+    assert "revenue_at_risk" in result.operational_metrics
+    assert result.workflow_definitions
+
+
+def test_case_pipeline_results_include_operational_tasks():
+    result = run_pipeline(case_id="ASC-CASE-006")
+    assert result.cases[0].operational_tasks

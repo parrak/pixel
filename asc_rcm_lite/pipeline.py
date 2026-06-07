@@ -18,6 +18,7 @@ from asc_rcm_lite.detectors.denials import DenialOpportunity, detect_denial_oppo
 from asc_rcm_lite.ingestion import DEFAULT_CASE_DIR, load_asc_case, load_asc_cases
 from asc_rcm_lite.intelligence.payer_patterns import PayerPatternSummary, build_payer_pattern_summary
 from asc_rcm_lite.models import ASCCase
+from asc_rcm_lite.operations import OperationalTask, WorkflowDefinition, build_operational_dashboard, build_operational_tasks, workflow_catalog
 from asc_rcm_lite.reviewer.packet import ReviewerPacket, render_packet_for_ar, render_packet_for_coding, render_packet_for_denial
 from asc_rcm_lite.workflow.state import WorkflowItem
 from asc_rcm_lite.workqueue import WorkQueueEntry, build_work_queue, manager_summary
@@ -34,6 +35,7 @@ class CasePipelineResult:
     denial_opportunities: tuple[DenialOpportunity, ...]
     work_queue: tuple[WorkQueueEntry, ...]
     workflow_items: tuple[WorkflowItem, ...]
+    operational_tasks: tuple[OperationalTask, ...]
     reviewer_packets: tuple[ReviewerPacket, ...]
     copilot_summaries: tuple[str, ...]
 
@@ -43,6 +45,8 @@ class PipelineResult:
     cases: tuple[CasePipelineResult, ...]
     payer_intelligence: PayerPatternSummary
     manager_metrics: dict[str, object]
+    operational_metrics: dict[str, object]
+    workflow_definitions: tuple[WorkflowDefinition, ...]
 
 
 def run_pipeline(
@@ -77,7 +81,14 @@ def run_pipeline(
 
     payer_summary = build_payer_pattern_summary(tuple(cases), tuple(all_denials), tuple(all_ar_flags))
     queue = tuple(item for result in results for item in result.work_queue)
-    return PipelineResult(cases=tuple(results), payer_intelligence=payer_summary, manager_metrics=manager_summary(queue))
+    tasks = tuple(task for result in results for task in result.operational_tasks)
+    return PipelineResult(
+        cases=tuple(results),
+        payer_intelligence=payer_summary,
+        manager_metrics=manager_summary(queue),
+        operational_metrics=build_operational_dashboard(tasks),
+        workflow_definitions=workflow_catalog(),
+    )
 
 
 def _run_case(
@@ -117,6 +128,13 @@ def _run_case(
         summaries.append(denial_copilot.denial_summary(item).content)
     for item in workflow_items:
         summaries.append(workflow_assistant.suggest_next_action(item, role=item.owner_role).content)
+    operational_tasks = build_operational_tasks(
+        case,
+        coding_items=coding_items,
+        ar_flags=ar_flags,
+        denial_items=denial_items,
+        as_of_date=as_of_date,
+    )
     return CasePipelineResult(
         case_id=case.case_id,
         coding_opportunities=coding_items,
@@ -124,6 +142,7 @@ def _run_case(
         denial_opportunities=denial_items,
         work_queue=work_queue,
         workflow_items=workflow_items,
+        operational_tasks=operational_tasks,
         reviewer_packets=packets,
         copilot_summaries=tuple(summaries),
     )
@@ -138,11 +157,13 @@ def _jsonable(result: PipelineResult) -> dict[str, object]:
                 "ar_flags": [flag.flag_id for flag in item.ar_flags],
                 "denial_opportunities": [opportunity.denial_id for opportunity in item.denial_opportunities],
                 "work_queue_items": [queue_item.work_item_id for queue_item in item.work_queue],
+                "task_ids": [task.task_id for task in item.operational_tasks],
                 "packet_ids": [packet.packet_id for packet in item.reviewer_packets],
             }
             for item in result.cases
         ],
         "manager_metrics": result.manager_metrics,
+        "operational_metrics": result.operational_metrics,
         "payer_friction_score": result.payer_intelligence.payer_friction_score,
     }
 
