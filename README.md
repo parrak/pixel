@@ -66,6 +66,7 @@ The product is deterministic-first. Synthetic rules, synthetic payer policies, a
 ## Operating-System Surfaces
 
 - `asc_rcm_lite/operations.py`
+- `asc_rcm_lite/journeys.py`
 - `docs/PHASE2_ARCHITECTURE_ASSESSMENT.md`
 - `docs/PHASE2_IMPLEMENTATION_PLAN.md`
 - `docs/PHASE3_OPERATOR_OS_PLAN.md`
@@ -78,6 +79,9 @@ uv sync --dev
 uv run pytest
 uv run python evals/run_asc_copilot_eval.py
 uv run python -m asc_rcm_lite.pipeline --all
+uv run python demo_ar_specialist.py
+uv run python demo_ar_manager.py
+uv run python demo_vp_revenue_cycle.py
 ```
 
 For the local Streamlit workbench, install the optional UI extra first:

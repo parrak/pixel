@@ -15,6 +15,7 @@ from asc_rcm_lite.copilot.ar_copilot import ARCopilot
 from asc_rcm_lite.copilot.denial_copilot import DenialCopilot
 from asc_rcm_lite.copilot.payer_intelligence_copilot import PayerIntelligenceCopilot
 from asc_rcm_lite.copilot.workflow_assistant import WorkflowAssistant
+from asc_rcm_lite.journeys import execute_journey
 from asc_rcm_lite.operations import OperationalTask, simulate_acquisition
 from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, run_pipeline
 
@@ -221,6 +222,7 @@ metric_cols[4].markdown(
 
 tabs = st.tabs(
     [
+        "Operational Journeys",
         "HoldCo Command Center",
         "Value Creation",
         "Portfolio Benchmarks",
@@ -236,6 +238,46 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
+    st.subheader("End-to-End Operational Journeys")
+    st.caption("Run a realistic day-in-the-life workflow from queue identification through decision, outcome, and impact.")
+    journey_options = {
+        "AR Specialist": "ar_specialist",
+        "AR Manager": "ar_manager",
+        "VP Revenue Cycle": "vp_revenue_cycle",
+    }
+    selected_journey_label = st.selectbox("Role", list(journey_options), key="journey_role")
+    journey = execute_journey(journey_options[selected_journey_label]).to_dict()
+    top_left, top_right = st.columns([1.05, 0.95])
+    top_left.markdown(
+        _task_card(
+            journey["persona"],
+            journey["title"],
+            journey["scenario"],
+        ),
+        unsafe_allow_html=True,
+    )
+    top_right.json(
+        {
+            "metrics_before": journey["metrics_before"],
+            "metrics_after": journey["metrics_after"],
+            "institutional_memory_update": journey["institutional_memory_update"],
+        }
+    )
+    st.json(
+        {
+            "queue_snapshot": journey["queue_snapshot"],
+            "recommendation_history": journey["recommendation_history"],
+            "final_outcome": journey["final_outcome"],
+        }
+    )
+    st.dataframe(journey["steps"], use_container_width=True)
+    if journey["payer_history"] or journey["claim_history"] or journey["prior_follow_up_activity"]:
+        history_left, history_right, history_third = st.columns(3)
+        history_left.json({"payer_history": journey["payer_history"]})
+        history_right.json({"claim_history": journey["claim_history"]})
+        history_third.json({"prior_follow_up_activity": journey["prior_follow_up_activity"]})
+
+with tabs[1]:
     st.subheader("HoldCo Dashboard")
     st.caption("What should leadership focus on today across the specialty RCM platform?")
     lead_left, lead_right = st.columns([1.05, 0.95])
@@ -287,7 +329,7 @@ with tabs[0]:
         }
     )
 
-with tabs[1]:
+with tabs[2]:
     st.subheader("Value Creation System")
     st.caption("Operational changes tied directly to expected and realized EBITDA impact.")
     initiative_rows = [
@@ -306,7 +348,7 @@ with tabs[1]:
     selected_initiative = portfolio["value_creation_initiatives"][0]
     st.json(selected_initiative)
 
-with tabs[2]:
+with tabs[3]:
     st.subheader("Portfolio Benchmarking")
     st.caption("Compare every organization to the portfolio average, top quartile, and best-in-class.")
     benchmark_org = next(item for item in portfolio["portfolio_benchmarks"]["organizations"] if item["name"] == selected_org_name)
@@ -325,7 +367,7 @@ with tabs[2]:
     st.dataframe(benchmark_rows, use_container_width=True)
     st.info(portfolio["portfolio_benchmarks"]["narrative"])
 
-with tabs[3]:
+with tabs[4]:
     st.subheader("Playbook System")
     st.caption("Reusable operating playbooks standardize acquired operators across the platform.")
     selected_playbook_name = st.selectbox("Playbook", [item["name"] for item in portfolio["playbooks"]], key="playbook_selector")
@@ -343,7 +385,7 @@ with tabs[3]:
     st.dataframe(playbook_rows, use_container_width=True)
     st.json(playbook)
 
-with tabs[4]:
+with tabs[5]:
     review = portfolio["executive_operating_review"]
     st.subheader("Executive Operating Review")
     st.caption("Monthly board-style readout for leadership, operating partners, and future executives.")
@@ -364,7 +406,7 @@ with tabs[4]:
     )
     st.json({"risks": review["risks"], "wins": review["wins"], "benchmark_excerpt": review["benchmark_excerpt"]})
 
-with tabs[5]:
+with tabs[6]:
     monday = portfolio["monday_morning"]
     st.subheader(monday["title"])
     st.caption("Guided day-in-the-life experience for an acquired ASC operator running inside Citron.")
@@ -380,7 +422,7 @@ with tabs[5]:
     assign.json({"assignments": monday["assignments"], "critical_work": monday["critical_work"]})
     outcomes.json({"workflow_bottlenecks": monday["workflow_bottlenecks"], "outcomes": monday["outcomes"]})
 
-with tabs[6]:
+with tabs[7]:
     st.subheader(f"{selected_role} Queue")
     st.caption(f"Operational queue for {selected_org_name}. This view is role-first rather than detector-first.")
     role_rows = [
@@ -433,7 +475,7 @@ with tabs[6]:
         unsafe_allow_html=True,
     )
 
-with tabs[7]:
+with tabs[8]:
     st.subheader("Decision Intelligence Foundation")
     st.caption("Recommendation -> decision -> outcome memory with portfolio-wide visibility into what creates value.")
     st.json(decision_intelligence["summary"])
@@ -469,7 +511,7 @@ with tabs[7]:
             }
         )
 
-with tabs[8]:
+with tabs[9]:
     st.subheader("Workflow Definition Engine")
     st.caption("Workflow definitions are configuration-backed and future specialties can plug into the same engine.")
     workflow = next(workflow for workflow in result.workflow_definitions if workflow.name == selected_workflow)
@@ -495,7 +537,7 @@ with tabs[8]:
     ]
     st.dataframe(stage_rows, use_container_width=True)
 
-with tabs[9]:
+with tabs[10]:
     st.subheader("Acquisition Integration Center")
     st.caption("Post-acquisition integration experience that translates workflow standardization into value creation.")
     col1, col2, col3 = st.columns(3)
@@ -533,7 +575,7 @@ with tabs[9]:
         }
     )
 
-with tabs[10]:
+with tabs[11]:
     st.subheader("Legacy Features")
     st.caption("Existing ASC RCM features remain in the system as workflow-supporting modules.")
     legacy_tabs = st.tabs(["Coding", "A/R", "Denials", "Workflow Assistant", "Payer Intelligence", "Case Detail"])
