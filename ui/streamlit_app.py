@@ -7,6 +7,9 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+THEME_PATH = ROOT / "ui" / "citron_theme.css"
+LOGO_PATH = ROOT / "ui" / "assets" / "logo-mark.svg"
+LOGO_DATA_URI = "data:image/svg+xml;utf8," + LOGO_PATH.read_text(encoding="utf-8").replace('"', "'").replace("#", "%23").replace("\n", "")
 
 from asc_rcm_lite.copilot.ar_copilot import ARCopilot
 from asc_rcm_lite.copilot.denial_copilot import DenialCopilot
@@ -46,36 +49,72 @@ def _format_money(value: object) -> str:
 
 
 st.set_page_config(page_title="Citron Health Operator OS", layout="wide")
+st.markdown(f"<style>{THEME_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 st.markdown(
     """
     <style>
-    .stApp { background: linear-gradient(180deg, #f4f2ea 0%, #fbfaf6 35%, #ffffff 100%); }
+    .stApp { background: linear-gradient(180deg, #fafaf7 0%, #f5f6f2 36%, #ffffff 100%); }
+    [data-testid="stSidebar"] {
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+    }
     .hero {
         padding: 1.3rem 1.5rem;
-        border: 1px solid rgba(17, 24, 39, 0.08);
+        border: 1px solid var(--border);
         border-radius: 24px;
         background:
-          radial-gradient(circle at top left, rgba(255, 205, 102, 0.28), transparent 32%),
-          linear-gradient(135deg, #11261f 0%, #1d3a31 52%, #28473d 100%);
+          radial-gradient(circle at top left, rgba(207, 232, 79, 0.28), transparent 32%),
+          linear-gradient(135deg, var(--pine-700) 0%, var(--pine-600) 52%, var(--pine-500) 100%);
         color: #f8f7f2;
         margin-bottom: 1rem;
     }
     .subtle {
         padding: 0.9rem 1rem;
         border-radius: 18px;
-        background: rgba(255,255,255,0.86);
-        border: 1px solid rgba(17, 24, 39, 0.08);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
     }
     .card {
         padding: 1rem;
         border-radius: 18px;
-        background: #ffffff;
-        border: 1px solid rgba(17, 24, 39, 0.08);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
         height: 100%;
     }
-    .eyebrow { color: #d8f0c7; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.75rem; }
-    .metric-label { color: #6b7280; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .metric-value { color: #111827; font-size: 1.6rem; font-weight: 700; }
+    .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+    .brand-mark {
+        width: 2.7rem;
+        height: 2.7rem;
+        border-radius: 12px;
+    }
+    .brand-wordmark {
+        display: flex;
+        flex-direction: column;
+        gap: 0.06rem;
+    }
+    .brand-title {
+        font-size: 1.08rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink-900);
+    }
+    .brand-title b { color: var(--pine-600); }
+    .brand-subtitle {
+        color: var(--ink-500);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+    }
+    .eyebrow { color: #d8f0c7; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.75rem; font-weight: 700; }
+    .metric-label { color: var(--ink-500); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+    .metric-value { color: var(--ink-900); font-size: 1.6rem; font-weight: 800; }
     .badge {
         display: inline-block;
         padding: 0.2rem 0.55rem;
@@ -84,10 +123,10 @@ st.markdown(
         font-weight: 600;
         margin-right: 0.35rem;
     }
-    .badge-urgent { background: #ffe4dd; color: #9f2d1d; }
-    .badge-high { background: #fff0d8; color: #9a5b00; }
-    .badge-normal { background: #e7f0ff; color: #234083; }
-    .badge-low { background: #edf7eb; color: #2d6a33; }
+    .badge-urgent { background: var(--danger-100); color: var(--danger-700); }
+    .badge-high { background: var(--warning-100); color: var(--warning-700); }
+    .badge-normal { background: var(--info-100); color: var(--info-700); }
+    .badge-low { background: var(--success-100); color: var(--success-700); }
     </style>
     """,
     unsafe_allow_html=True,
@@ -99,6 +138,18 @@ all_tasks = [task for case in result.cases for task in case.operational_tasks]
 all_cases = {case.case_id: case for case in result.cases}
 orgs = portfolio["organizations"]
 org_names = [org["name"] for org in orgs]
+st.sidebar.image(str(LOGO_PATH), width=44)
+st.sidebar.markdown(
+    """
+    <div class="brand-lockup" style="margin-bottom:0.9rem;">
+      <div class="brand-wordmark">
+        <div class="brand-title">Citron<b> Health</b></div>
+        <div class="brand-subtitle">Operator Operating System</div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 selected_org_name = st.sidebar.selectbox("Organization", org_names, index=0)
 selected_org = next(org for org in orgs if org["name"] == selected_org_name)
 selected_role = st.sidebar.selectbox("Role View", [ROLE_LABELS[key] for key in ROLE_LABELS], index=0)
@@ -114,8 +165,15 @@ selected_case = all_cases[selected_task.case_id]
 selected_workflow = st.sidebar.selectbox("Workflow", [workflow.name for workflow in result.workflow_definitions], index=0)
 
 st.markdown(
-    """
+    f"""
     <div class="hero">
+      <div class="brand-lockup" style="margin-bottom:0.9rem;">
+        <img class="brand-mark" src="{LOGO_DATA_URI}" alt="Citron Health logo" />
+        <div class="brand-wordmark">
+          <div class="brand-title" style="color:#f8f7f2;">Citron<b style="color:#cfe84f;"> Health</b></div>
+          <div class="brand-subtitle" style="color:#d8f0c7;">Specialty Revenue Cycle OS</div>
+        </div>
+      </div>
       <div class="eyebrow">Citron Health Phase 3</div>
       <h1 style="margin:0.2rem 0 0.5rem 0;">Operator Operating System</h1>
       <p style="margin:0;max-width:58rem;">

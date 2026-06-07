@@ -3,10 +3,18 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 from html import escape
+from pathlib import Path
 from urllib.parse import parse_qs
 
 from asc_rcm_lite.operations import simulate_acquisition
 from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, PipelineResult, run_pipeline
+
+
+LOGO_MARK = Path(__file__).resolve().parent / "ui" / "assets" / "logo-mark.svg"
+
+
+def _logo_svg() -> str:
+    return LOGO_MARK.read_text(encoding="utf-8")
 
 
 @lru_cache(maxsize=1)
@@ -82,6 +90,7 @@ def _serialize_case(case_result) -> dict[str, object]:
 def _landing_page() -> str:
     result = _load_result()
     portfolio = result.portfolio_snapshot
+    logo = _logo_svg()
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -89,34 +98,94 @@ def _landing_page() -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Citron Health Operator OS</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    :root {{
+      --canvas: #fafaf7;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-2: #f5f6f2;
+      --ink-900: #15201c;
+      --ink-500: #69756e;
+      --border: #e6e8e1;
+      --pine-700: #0f5240;
+      --pine-600: #15634d;
+      --citron-500: #cfe84f;
+      --shadow-sm: 0 1px 3px rgba(20, 32, 28, 0.06), 0 1px 2px rgba(20, 32, 28, 0.04);
+      --shadow-md: 0 4px 12px -2px rgba(20, 32, 28, 0.08), 0 2px 6px -2px rgba(20, 32, 28, 0.05);
+    }}
     body {{
       margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      color: #17222f;
+      font-family: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink-900);
       background:
-        radial-gradient(circle at 0% 0%, rgba(15, 118, 110, 0.14), transparent 26rem),
-        radial-gradient(circle at 100% 20%, rgba(217, 119, 6, 0.10), transparent 24rem),
-        linear-gradient(180deg, #fcf8f1 0%, #f6efe4 100%);
+        radial-gradient(circle at 0% 0%, rgba(207, 232, 79, 0.22), transparent 26rem),
+        radial-gradient(circle at 100% 20%, rgba(15, 118, 110, 0.10), transparent 24rem),
+        linear-gradient(180deg, #fbfbf8 0%, var(--canvas) 100%);
     }}
     main {{ max-width: 1180px; margin: 0 auto; padding: 28px 18px 48px; }}
+    .brand-lockup {{
+      display: inline-flex;
+      align-items: center;
+      gap: .85rem;
+      margin-bottom: 1rem;
+    }}
+    .brand-mark {{
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 12px;
+      overflow: hidden;
+      flex: 0 0 auto;
+    }}
+    .brand-mark svg {{
+      width: 100%;
+      height: 100%;
+      display: block;
+    }}
+    .brand-wordmark {{
+      display: flex;
+      flex-direction: column;
+      gap: .06rem;
+    }}
+    .brand-title {{
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }}
+    .brand-title b {{
+      color: var(--pine-600);
+    }}
+    .brand-subtitle {{
+      color: var(--ink-500);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }}
     .hero, .panel {{
-      background: rgba(255, 252, 246, 0.92);
-      border: 1px solid rgba(23, 34, 47, 0.12);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 28px;
-      box-shadow: 0 24px 80px rgba(23, 34, 47, 0.10);
+      box-shadow: var(--shadow-md);
       padding: 28px;
     }}
     .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }}
-    .metric {{ padding: 16px; border-radius: 20px; border: 1px solid rgba(23, 34, 47, 0.12); background: rgba(255,255,255,0.76); }}
+    .metric {{ padding: 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-2); box-shadow: var(--shadow-sm); }}
     .metric strong {{ display: block; font-size: 2rem; }}
-    .button {{ display: inline-block; margin-right: 12px; margin-top: 12px; padding: 12px 18px; border-radius: 999px; text-decoration: none; border: 1px solid rgba(23,34,47,0.12); }}
-    .primary {{ background: #0f766e; color: white; border-color: #0f766e; }}
+    .button {{ display: inline-block; margin-right: 12px; margin-top: 12px; padding: 12px 18px; border-radius: 999px; text-decoration: none; border: 1px solid var(--border); font-weight: 700; color: var(--ink-900); }}
+    .primary {{ background: var(--pine-600); color: white; border-color: var(--pine-600); }}
+    p, li {{ color: var(--ink-500); line-height: 1.6; }}
   </style>
 </head>
 <body>
   <main>
     <section class="hero">
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:#0f766e;font-size:.88rem;">Citron Health Phase 3</div>
+      <div class="brand-lockup">
+        <div class="brand-mark">{logo}</div>
+        <div class="brand-wordmark">
+          <div class="brand-title">Citron<b> Health</b></div>
+          <div class="brand-subtitle">Operator Operating System</div>
+        </div>
+      </div>
+      <div style="text-transform:uppercase;letter-spacing:.08em;color:var(--pine-600);font-size:.88rem;font-weight:700;">Citron Health Phase 3</div>
       <h1 style="font-size:clamp(2.4rem,5vw,4.8rem);line-height:.95;margin:.4rem 0 1rem;">Operator Operating System for Specialty Revenue Cycle</h1>
       <p>Citron exists to make acquired specialty RCM businesses better operators. The software sits above EHRs, PM systems, payer portals, and clearinghouses to standardize task ownership, human decision-making, and outcome tracking across a portfolio.</p>
       <p>The product is no longer centered on coding review or denial review. Those remain inside the system as features, while the operating model centers on organization, facility, team, user, workflow, task, recommendation, decision, and outcome.</p>
@@ -151,6 +220,7 @@ def _demo_page(selected_case_id: str | None = None) -> str:
     monday = portfolio["monday_morning"]
     selected = _selected_case(selected_case_id)
     selected_task = selected.operational_tasks[0]
+    logo = _logo_svg()
     role_rows = "".join(
         f"<tr><td>{escape(view['label'])}</td><td>{escape(str(view['queue_size']))}</td><td>${escape(view['revenue_at_risk'])}</td><td>${escape(view['financial_result'])}</td></tr>"
         for view in portfolio["role_views"]
@@ -166,32 +236,91 @@ def _demo_page(selected_case_id: str | None = None) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Citron Health Operator Demo</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    :root {{
+      --canvas: #fafaf7;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-2: #f5f6f2;
+      --ink-900: #15201c;
+      --ink-500: #69756e;
+      --border: #e6e8e1;
+      --pine-700: #0f5240;
+      --pine-600: #15634d;
+      --warning-100: #fbf0dc;
+      --warning-700: #97600f;
+      --shadow-sm: 0 1px 3px rgba(20, 32, 28, 0.06), 0 1px 2px rgba(20, 32, 28, 0.04);
+      --shadow-md: 0 4px 12px -2px rgba(20, 32, 28, 0.08), 0 2px 6px -2px rgba(20, 32, 28, 0.05);
+    }}
     body {{
       margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      color: #1b2430;
+      font-family: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink-900);
       background:
-        radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28rem),
-        linear-gradient(180deg, #fbf7f1 0%, #f4efe6 100%);
+        radial-gradient(circle at top left, rgba(207, 232, 79, 0.22), transparent 28rem),
+        linear-gradient(180deg, #fbfbf8 0%, var(--canvas) 100%);
     }}
     main {{ max-width: 1200px; margin: 0 auto; padding: 32px 20px 48px; }}
+    .brand-lockup {{
+      display: inline-flex;
+      align-items: center;
+      gap: .85rem;
+      margin-bottom: 1rem;
+    }}
+    .brand-mark {{
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 12px;
+      overflow: hidden;
+      flex: 0 0 auto;
+    }}
+    .brand-mark svg {{
+      width: 100%;
+      height: 100%;
+      display: block;
+    }}
+    .brand-wordmark {{
+      display: flex;
+      flex-direction: column;
+      gap: .06rem;
+    }}
+    .brand-title {{
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }}
+    .brand-title b {{ color: var(--pine-600); }}
+    .brand-subtitle {{
+      color: var(--ink-500);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }}
     .hero, .card {{
-      background: rgba(255, 251, 245, 0.94);
-      border: 1px solid rgba(27, 36, 48, 0.12);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 24px;
       padding: 24px;
-      box-shadow: 0 18px 60px rgba(27, 36, 48, 0.10);
+      box-shadow: var(--shadow-md);
     }}
     .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 18px; }}
     .two-col {{ display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; margin-top: 18px; }}
     table {{ width: 100%; border-collapse: collapse; }}
-    th, td {{ text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(27, 36, 48, 0.12); vertical-align: top; }}
-    .pill {{ display:inline-block;padding:8px 12px;border-radius:999px;background:#fff7d6;border:1px solid rgba(137,94,0,.18);color:#704f00;font-size:.92rem; }}
+    th, td {{ text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }}
+    .pill {{ display:inline-block;padding:8px 12px;border-radius:999px;background:var(--warning-100);border:1px solid rgba(151,96,15,.18);color:var(--warning-700);font-size:.92rem;font-weight:700; }}
+    p, li {{ color: var(--ink-500); line-height: 1.6; }}
   </style>
 </head>
 <body>
   <main>
     <section class="hero">
+      <div class="brand-lockup">
+        <div class="brand-mark">{logo}</div>
+        <div class="brand-wordmark">
+          <div class="brand-title">Citron<b> Health</b></div>
+          <div class="brand-subtitle">Operator Operating System</div>
+        </div>
+      </div>
       <span class="pill">Synthetic data only. Human review required. No autonomous workflows.</span>
       <h1 style="margin:.75rem 0 1rem;">Monday Morning inside Citron</h1>
       <p>{escape(monday['vp_user']['display_name'])}, {escape(monday['vp_user']['title'])}, opens Citron and sees a portfolio operating system rather than a detector screen.</p>
