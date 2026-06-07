@@ -43,10 +43,35 @@ The product is deterministic-first. Synthetic rules, synthetic payer policies, a
 ## Quickstart
 
 ```bash
+uv sync --dev
 uv run pytest
 uv run python evals/run_asc_copilot_eval.py
 uv run python -m asc_rcm_lite.pipeline --all
+```
+
+For the local Streamlit workbench, install the optional UI extra first:
+
+```bash
+uv sync --extra ui
 uv run streamlit run ui/streamlit_app.py
+```
+
+## Vercel Deployment
+
+This repository now exposes a top-level WSGI app at `app.py`, which matches Vercel's Python entrypoint requirements. The deployed surface provides:
+
+- `/`: HTML dashboard for the synthetic ASC RCM workbench
+- `/api/summary`: pipeline summary JSON
+- `/api/case?case_id=ASC-CASE-008`: per-case JSON
+- `/health`: deployment health check
+
+To link the repo to the existing Vercel project and deploy from a machine with a valid Vercel login:
+
+```bash
+vercel link --yes --project pixel --scope rakesh-paridas-projects
+vercel pull --yes --environment production
+vercel build --yes
+vercel deploy --prebuilt --prod
 ```
 
 ## Key Modules
