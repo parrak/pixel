@@ -40,3 +40,12 @@ def test_authorization_failure_workflow_acceptance():
     assert any(step["label"] == "Coordination" for step in run["steps"])
     assert run["institutional_memory_update"]["entries"] >= 1
     assert run["metrics_after"]["open_work"] == 0
+
+
+def test_workflow_acceptance_updates_artifacts_and_timeline_integrity():
+    run = execute_workflow_journey("medical_necessity_appeal").to_dict()
+
+    assert run["queue_snapshot"]["timeline"]
+    assert run["queue_snapshot"]["documents"]
+    assert run["queue_snapshot"]["institutional_memory"]
+    assert run["final_outcome"]["status"]

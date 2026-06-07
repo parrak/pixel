@@ -144,6 +144,12 @@ portfolio = result.portfolio_snapshot
 all_tasks = [task for case in result.cases for task in case.operational_tasks]
 all_cases = {case.case_id: case for case in result.cases}
 all_work_objects = portfolio.get("work_objects", [])
+account_workspaces = portfolio.get("account_workspaces", [])
+denial_workspaces = portfolio.get("denial_resolution_workspaces", [])
+ar_workspaces = portfolio.get("ar_recovery_workspaces", [])
+decision_registry = portfolio.get("decision_memory_registry", {})
+payer_graph = portfolio.get("payer_intelligence_graph", {})
+manager_system = portfolio.get("manager_intervention_system", {})
 orgs = portfolio["organizations"]
 org_names = [org["name"] for org in orgs]
 st.sidebar.image(str(LOGO_PATH), width=44)
@@ -171,6 +177,15 @@ role_work_objects = [
 ] or [
     item for item in all_work_objects if item["organization_name"] == selected_org_name
 ]
+selected_account_workspace = next(
+    (
+        item
+        for item in account_workspaces
+        if item["organization_name"] == selected_org_name
+        and any(work["owner_role"] == selected_role_key for work in item["open_work_objects"])
+    ),
+    account_workspaces[0] if account_workspaces else None,
+)
 selected_work_object_label = st.sidebar.selectbox(
     "Work Object",
     [f"{item['work_object_id']} | {item['title']}" for item in role_work_objects],
@@ -231,8 +246,15 @@ metric_cols[4].markdown(
 
 tabs = st.tabs(
     [
+        "Account Workspace",
         "Work Queue",
         "Operational Journeys",
+        "Denial Workspace",
+        "AR Recovery",
+        "Manager OS",
+        "Decision Memory",
+        "Payer Graph",
+        "Nimble Evaluation",
         "HoldCo Command Center",
         "Value Creation",
         "Portfolio Benchmarks",
@@ -248,6 +270,49 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
+    st.subheader("Account Workspace")
+    st.caption("Primary operating screen. Financial impact, claim summary, timeline, evidence, work objects, artifacts, actions, prior outcomes, and activity history live in one workspace.")
+    if selected_account_workspace:
+        left, right = st.columns([1.05, 0.95])
+        left.json(
+            {
+                "account_id": selected_account_workspace["account_id"],
+                "claim_summary": selected_account_workspace["claim_summary"],
+                "payer_summary": selected_account_workspace["payer_summary"],
+                "current_owner": selected_account_workspace["current_owner"],
+                "status": selected_account_workspace["status"],
+                "recovery_potential": selected_account_workspace["recovery_potential"],
+            }
+        )
+        right.json(
+            {
+                "recommended_actions": selected_account_workspace["recommended_actions"],
+                "prior_outcomes": selected_account_workspace["prior_outcomes"],
+            }
+        )
+        timeline_col, work_col = st.columns(2)
+        timeline_col.dataframe(selected_account_workspace["timeline"], use_container_width=True)
+        work_col.dataframe(
+            [
+                {
+                    "work_object_id": item["work_object_id"],
+                    "type": item["work_object_type"],
+                    "status": item["status"],
+                    "workflow_status": item["workflow_status"],
+                    "financial_impact": _format_money(item["financial_impact"]),
+                }
+                for item in selected_account_workspace["open_work_objects"]
+            ],
+            use_container_width=True,
+        )
+        evidence_col, artifact_col = st.columns(2)
+        evidence_col.dataframe(selected_account_workspace["evidence"], use_container_width=True)
+        artifact_col.dataframe(selected_account_workspace["generated_artifacts"], use_container_width=True)
+        st.dataframe(selected_account_workspace["activity_history"], use_container_width=True)
+    else:
+        st.info("No account workspace available.")
+
+with tabs[1]:
     st.subheader(f"{selected_role} Work Queue")
     st.caption("Operators begin with work. Each item is a workflow-native work object with its own timeline, evidence, work product, actions, outcome, and memory.")
     work_rows = [
@@ -294,7 +359,7 @@ with tabs[0]:
     docs_col.dataframe(selected_work_object["documents"], use_container_width=True)
     memory_col.dataframe(selected_work_object["institutional_memory"], use_container_width=True)
 
-with tabs[1]:
+with tabs[2]:
     st.subheader("End-to-End Operational Journeys")
     st.caption("Run a realistic day-in-the-life workflow from queue identification through decision, outcome, and impact.")
     journey_options = {
@@ -334,7 +399,91 @@ with tabs[1]:
         history_right.json({"claim_history": journey["claim_history"]})
         history_third.json({"prior_follow_up_activity": journey["prior_follow_up_activity"]})
 
-with tabs[2]:
+with tabs[3]:
+    st.subheader("Denial Resolution Workspace")
+    st.caption("Complete denial lifecycle from receipt through payment.")
+    if denial_workspaces:
+        selected_denial = denial_workspaces[0]
+        st.json(
+            {
+                "work_object_id": selected_denial["work_object_id"],
+                "title": selected_denial["title"],
+                "claim_id": selected_denial["claim_id"],
+                "financial_impact": _format_money(selected_denial["financial_impact"]),
+                "outcome": selected_denial["outcome"],
+            }
+        )
+        left, right = st.columns(2)
+        left.dataframe(selected_denial["stages"], use_container_width=True)
+        right.dataframe(selected_denial["timeline"], use_container_width=True)
+        artifact_col, evidence_col = st.columns(2)
+        artifact_col.dataframe(selected_denial["artifacts"], use_container_width=True)
+        evidence_col.dataframe(selected_denial["evidence"], use_container_width=True)
+    else:
+        st.info("No denial workspace available.")
+
+with tabs[4]:
+    st.subheader("AR Recovery Workspace")
+    st.caption("AR specialists can review, research, document, escalate, and resolve work without leaving Citron.")
+    if ar_workspaces:
+        selected_ar = ar_workspaces[0]
+        st.json(
+            {
+                "work_object_id": selected_ar["work_object_id"],
+                "title": selected_ar["title"],
+                "scenario_tags": selected_ar["scenario_tags"],
+                "financial_impact": _format_money(selected_ar["financial_impact"]),
+                "outcome": selected_ar["outcome"],
+            }
+        )
+        left, right = st.columns(2)
+        left.dataframe(selected_ar["actions"], use_container_width=True)
+        right.dataframe(selected_ar["timeline"], use_container_width=True)
+        evidence_col, artifact_col = st.columns(2)
+        evidence_col.dataframe(selected_ar["evidence"], use_container_width=True)
+        artifact_col.dataframe(selected_ar["generated_artifacts"], use_container_width=True)
+    else:
+        st.info("No AR recovery workspace available.")
+
+with tabs[5]:
+    st.subheader("Manager Intervention System")
+    st.caption("Managers operate. They rebalance work, remove blockers, override priorities, and create measurable workflow impact.")
+    st.json(manager_system)
+
+with tabs[6]:
+    st.subheader("Decision Memory")
+    st.caption("Every completed work object records problem, evidence, recommendation, decision, resolution, operator, payer, and financial result.")
+    st.dataframe(decision_registry.get("records", []), use_container_width=True)
+    left, right = st.columns(2)
+    left.json({"similar_cases": decision_registry.get("similar_cases", {}), "successful_recoveries": decision_registry.get("successful_recoveries", [])[:4]})
+    right.json({"failed_recoveries": decision_registry.get("failed_recoveries", []), "payer_history": decision_registry.get("payer_history", {})})
+
+with tabs[7]:
+    st.subheader("Payer Intelligence Graph")
+    st.caption("Workflow outcomes become payer operating knowledge: denial patterns, appeal success, evidence effectiveness, recovery time, escalation paths, and response times.")
+    st.json(payer_graph.get("questions", []))
+    st.dataframe(payer_graph.get("payers", []), use_container_width=True)
+
+with tabs[8]:
+    st.subheader("Nimble Evaluation Mode")
+    st.caption("10-minute operator walkthrough: revenue at risk appears, work is created, specialists process work, managers intervene, work product is generated, recovery happens, and knowledge compounds.")
+    nimble_steps = [
+        "Revenue at risk and open work objects appear in the account workspace.",
+        "Specialists review evidence, generated artifacts, and timelines without leaving Citron.",
+        "Managers rebalance queue work, remove blockers, and override priorities.",
+        "Outcomes update payer intelligence, decision memory, and institutional knowledge.",
+        "The result feels like working software rather than an AI demonstration.",
+    ]
+    st.json(
+        {
+            "audience": ["ASC operators", "RCM managers", "denial leaders", "AR leaders", "coding managers", "Nimble executives"],
+            "walkthrough": nimble_steps,
+            "account_workspace": selected_account_workspace["account_id"] if selected_account_workspace else None,
+            "manager_capacity": manager_system.get("capacity_planning", {}),
+        }
+    )
+
+with tabs[9]:
     st.subheader("HoldCo Dashboard")
     st.caption("What should leadership focus on today across the specialty RCM platform?")
     lead_left, lead_right = st.columns([1.05, 0.95])
@@ -386,7 +535,7 @@ with tabs[2]:
         }
     )
 
-with tabs[3]:
+with tabs[10]:
     st.subheader("Value Creation System")
     st.caption("Operational changes tied directly to expected and realized EBITDA impact.")
     initiative_rows = [
@@ -405,7 +554,7 @@ with tabs[3]:
     selected_initiative = portfolio["value_creation_initiatives"][0]
     st.json(selected_initiative)
 
-with tabs[4]:
+with tabs[11]:
     st.subheader("Portfolio Benchmarking")
     st.caption("Compare every organization to the portfolio average, top quartile, and best-in-class.")
     benchmark_org = next(item for item in portfolio["portfolio_benchmarks"]["organizations"] if item["name"] == selected_org_name)
@@ -424,7 +573,7 @@ with tabs[4]:
     st.dataframe(benchmark_rows, use_container_width=True)
     st.info(portfolio["portfolio_benchmarks"]["narrative"])
 
-with tabs[5]:
+with tabs[12]:
     st.subheader("Playbook System")
     st.caption("Reusable operating playbooks standardize acquired operators across the platform.")
     selected_playbook_name = st.selectbox("Playbook", [item["name"] for item in portfolio["playbooks"]], key="playbook_selector")
@@ -442,7 +591,7 @@ with tabs[5]:
     st.dataframe(playbook_rows, use_container_width=True)
     st.json(playbook)
 
-with tabs[6]:
+with tabs[13]:
     review = portfolio["executive_operating_review"]
     st.subheader("Executive Operating Review")
     st.caption("Monthly board-style readout for leadership, operating partners, and future executives.")
@@ -463,7 +612,7 @@ with tabs[6]:
     )
     st.json({"risks": review["risks"], "wins": review["wins"], "benchmark_excerpt": review["benchmark_excerpt"]})
 
-with tabs[7]:
+with tabs[14]:
     monday = portfolio["monday_morning"]
     st.subheader(monday["title"])
     st.caption("Guided day-in-the-life experience for an acquired ASC operator running inside Citron.")
@@ -479,7 +628,7 @@ with tabs[7]:
     assign.json({"assignments": monday["assignments"], "critical_work": monday["critical_work"]})
     outcomes.json({"workflow_bottlenecks": monday["workflow_bottlenecks"], "outcomes": monday["outcomes"]})
 
-with tabs[8]:
+with tabs[15]:
     st.subheader(f"{selected_role} Queue")
     st.caption(f"Operational queue for {selected_org_name}. This view is role-first rather than detector-first.")
     role_rows = [
@@ -532,7 +681,7 @@ with tabs[8]:
         unsafe_allow_html=True,
     )
 
-with tabs[9]:
+with tabs[16]:
     st.subheader("Decision Intelligence Foundation")
     st.caption("Recommendation -> decision -> outcome memory with portfolio-wide visibility into what creates value.")
     st.json(decision_intelligence["summary"])
@@ -568,7 +717,7 @@ with tabs[9]:
             }
         )
 
-with tabs[10]:
+with tabs[17]:
     st.subheader("Workflow Definition Engine")
     st.caption("Workflow definitions are configuration-backed and future specialties can plug into the same engine.")
     workflow = next(workflow for workflow in result.workflow_definitions if workflow.name == selected_workflow)
@@ -594,7 +743,7 @@ with tabs[10]:
     ]
     st.dataframe(stage_rows, use_container_width=True)
 
-with tabs[11]:
+with tabs[18]:
     st.subheader("Acquisition Integration Center")
     st.caption("Post-acquisition integration experience that translates workflow standardization into value creation.")
     col1, col2, col3 = st.columns(3)
@@ -632,7 +781,7 @@ with tabs[11]:
         }
     )
 
-with tabs[12]:
+with tabs[19]:
     st.subheader("Legacy Features")
     st.caption("Existing ASC RCM features remain in the system as workflow-supporting modules.")
     legacy_tabs = st.tabs(["Coding", "A/R", "Denials", "Workflow Assistant", "Payer Intelligence", "Case Detail"])

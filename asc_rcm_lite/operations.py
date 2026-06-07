@@ -769,13 +769,32 @@ def build_portfolio_snapshot(
     executive_review = _build_executive_review(holdco_dashboard, org_summaries, initiatives, benchmarking, decision_intelligence)
 
     work_objects_payload = []
+    account_workspaces = []
+    denial_workspaces = []
+    ar_workspaces = []
+    decision_registry = {}
+    payer_graph = {}
+    manager_interventions = {}
     if cases and as_of_date is not None:
-        from asc_rcm_lite.work_objects import build_work_objects, serialize_work_object
+        from asc_rcm_lite.work_objects import (
+            build_account_workspaces,
+            build_ar_recovery_workspaces,
+            build_decision_intelligence_registry,
+            build_denial_resolution_workspaces,
+            build_manager_intervention_system,
+            build_payer_intelligence_graph,
+            build_work_objects,
+            serialize_work_object,
+        )
 
-        work_objects_payload = [
-            serialize_work_object(item)
-            for item in build_work_objects(cases=cases, tasks=tasks, workflows=workflows, as_of_date=as_of_date)
-        ]
+        built_work_objects = build_work_objects(cases=cases, tasks=tasks, workflows=workflows, as_of_date=as_of_date)
+        work_objects_payload = [serialize_work_object(item) for item in built_work_objects]
+        account_workspaces = list(build_account_workspaces(built_work_objects))
+        denial_workspaces = list(build_denial_resolution_workspaces(built_work_objects))
+        ar_workspaces = list(build_ar_recovery_workspaces(built_work_objects))
+        decision_registry = build_decision_intelligence_registry(built_work_objects)
+        payer_graph = build_payer_intelligence_graph(built_work_objects)
+        manager_interventions = build_manager_intervention_system(built_work_objects)
 
     return {
         "holdco": {
@@ -891,6 +910,12 @@ def build_portfolio_snapshot(
             for item in playbooks
         ],
         "work_objects": work_objects_payload,
+        "account_workspaces": account_workspaces,
+        "denial_resolution_workspaces": denial_workspaces,
+        "ar_recovery_workspaces": ar_workspaces,
+        "decision_memory_registry": decision_registry,
+        "payer_intelligence_graph": payer_graph,
+        "manager_intervention_system": manager_interventions,
         "decision_intelligence": decision_intelligence,
         "executive_operating_review": executive_review,
         "acquisition_defaults": {

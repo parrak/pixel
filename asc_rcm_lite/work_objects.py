@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 
-from asc_rcm_lite.models import ASCCase, Authorization, Claim, Denial, PayerPolicy, Remit, ValidationError, require_non_empty
+from asc_rcm_lite.models import ASCCase, Claim, ValidationError, require_non_empty
 from asc_rcm_lite.operations import OperationalTask, WorkflowDefinition
 
 
@@ -146,6 +146,251 @@ class WorkObject:
             raise ValidationError("WorkObject.recommendations must not be empty")
         if not self.actions:
             raise ValidationError("WorkObject.actions must not be empty")
+
+
+def build_account_workspaces(work_objects: tuple[WorkObject, ...]) -> tuple[dict[str, object], ...]:
+    grouped: dict[str, list[WorkObject]] = {}
+    for item in work_objects:
+        grouped.setdefault(item.account_id, []).append(item)
+
+    workspaces: list[dict[str, object]] = []
+    for account_id, items in sorted(grouped.items()):
+        items = sorted(items, key=lambda work: (_priority_rank(work.priority), work.work_object_id))
+        primary = items[0]
+        timeline = sorted(
+            [event for item in items for event in item.timeline],
+            key=lambda event: (event.timestamp, event.event_id),
+        )
+        evidence = _dedupe_by_id([entry for item in items for entry in item.evidence], "evidence_id")
+        documents = _dedupe_by_id([entry for item in items for entry in item.documents], "artifact_id")
+        memory = _dedupe_by_id([entry for item in items for entry in item.institutional_memory], "memory_id")
+        recovery_potential = sum((item.financial_impact or Decimal("0.00") for item in items), Decimal("0.00"))
+        workspaces.append(
+            {
+                "account_id": account_id,
+                "organization_name": primary.organization_name,
+                "facility_name": primary.facility_name,
+                "claim_summary": {
+                    "claim_id": primary.claim_id,
+                    "open_work_objects": len(items),
+                    "financial_impact": _money(recovery_potential),
+                    "status": primary.workflow_status,
+                },
+                "payer_summary": {
+                    "payer_id": _payer_from_account(account_id),
+                    "current_owner": primary.owner_name or primary.owner_role,
+                    "recovery_potential": _money(recovery_potential),
+                },
+                "timeline": [_timeline_to_dict(event) for event in timeline],
+                "open_work_objects": [serialize_work_object(item) for item in items],
+                "evidence": [_evidence_to_dict(item) for item in evidence],
+                "generated_artifacts": [_document_to_dict(item) for item in documents],
+                "recommended_actions": [recommendation for item in items for recommendation in item.recommendations],
+                "prior_outcomes": [item.outcome for item in items if item.outcome.get("status") != "Pending"],
+                "activity_history": [_memory_to_dict(item) for item in memory],
+                "current_owner": primary.owner_name or primary.owner_role,
+                "status": primary.status,
+                "recovery_potential": _money(recovery_potential),
+            }
+        )
+    return tuple(workspaces)
+
+
+def build_denial_resolution_workspaces(work_objects: tuple[WorkObject, ...]) -> tuple[dict[str, object], ...]:
+    spaces = []
+    for item in work_objects:
+        if "Denial" not in item.work_object_type and item.work_object_type not in {"Appeal", "Authorization"}:
+            continue
+        stages = _stage_map(
+            current=item.workflow_status,
+            ordered=(
+                "Denial Received",
+                "Classification",
+                "Evidence Gathering",
+                "Packet Assembly",
+                "Appeal Generation",
+                "Submission",
+                "Payer Review",
+                "Resolution",
+                "Payment",
+            ),
+        )
+        spaces.append(
+            {
+                "work_object_id": item.work_object_id,
+                "title": item.title,
+                "claim_id": item.claim_id,
+                "organization_name": item.organization_name,
+                "financial_impact": _money(item.financial_impact),
+                "stages": stages,
+                "timeline": [_timeline_to_dict(event) for event in item.timeline],
+                "artifacts": [_document_to_dict(doc) for doc in item.documents],
+                "evidence": [_evidence_to_dict(evidence) for evidence in item.evidence],
+                "outcome": item.outcome,
+            }
+        )
+    return tuple(spaces)
+
+
+def build_ar_recovery_workspaces(work_objects: tuple[WorkObject, ...]) -> tuple[dict[str, object], ...]:
+    spaces = []
+    for item in work_objects:
+        if item.work_object_type not in {"AR Follow-Up", "Underpayment"}:
+            continue
+        scenario_tags = []
+        financial_impact = item.financial_impact or Decimal("0.00")
+        if any("90" in event.detail or "120" in event.detail for event in item.timeline):
+            scenario_tags.append("90+ Day Aging")
+        if "no-response" in item.title.lower() or "missing" in item.title.lower():
+            scenario_tags.append("No Response")
+        if item.work_object_type == "Underpayment":
+            scenario_tags.append("Underpayment")
+        if any(doc.artifact_type == "Payer Summary" for doc in item.documents):
+            scenario_tags.append("Stale Follow-Up")
+        if not scenario_tags:
+            scenario_tags.append("AR Follow-Up")
+        spaces.append(
+            {
+                "work_object_id": item.work_object_id,
+                "title": item.title,
+                "financial_impact": _money(financial_impact),
+                "scenario_tags": scenario_tags,
+                "actions": [_action_to_dict(action) for action in item.actions],
+                "evidence": [_evidence_to_dict(evidence) for evidence in item.evidence],
+                "generated_artifacts": [_document_to_dict(doc) for doc in item.documents],
+                "timeline": [_timeline_to_dict(event) for event in item.timeline],
+                "outcome": item.outcome,
+            }
+        )
+    return tuple(spaces)
+
+
+def build_decision_intelligence_registry(work_objects: tuple[WorkObject, ...]) -> dict[str, object]:
+    records = []
+    similar_case_index: dict[str, list[dict[str, object]]] = {}
+    for item in work_objects:
+        for memory in item.institutional_memory:
+            record = {
+                "work_object_id": item.work_object_id,
+                "problem": item.work_object_type,
+                "evidence": [_evidence_to_dict(evidence) for evidence in item.evidence[:2]],
+                "recommendation": item.recommendations[0]["title"],
+                "resolution": item.outcome["status"],
+                "financial_result": item.outcome["financial_result"],
+                "time_to_resolution": item.outcome["resolution_time_hours"],
+                "operator": item.owner_name or item.owner_role,
+                "facility": item.facility_name,
+                "payer": _payer_from_account(item.account_id),
+                "specialty": "ASC",
+                "outcome": item.outcome["impact_summary"],
+                "memory": memory.summary,
+            }
+            records.append(record)
+            similar_case_index.setdefault(item.work_object_type, []).append(record)
+    successful = [record for record in records if record["financial_result"] not in {None, "0.00"}]
+    failed = [record for record in records if record["resolution"] == "Pending"]
+    return {
+        "records": records,
+        "similar_cases": {key: value[:3] for key, value in similar_case_index.items()},
+        "successful_recoveries": successful[:10],
+        "failed_recoveries": failed[:10],
+        "appeal_history": [record for record in records if record["problem"] in {"Appeal", "Medical Necessity Denial", "Missing Documentation"}],
+        "payer_history": _group_counts(records, "payer"),
+    }
+
+
+def build_payer_intelligence_graph(work_objects: tuple[WorkObject, ...]) -> dict[str, object]:
+    graph: dict[str, dict[str, object]] = {}
+    for item in work_objects:
+        payer = _payer_from_account(item.account_id)
+        node = graph.setdefault(
+            payer,
+            {
+                "payer": payer,
+                "denial_patterns": {},
+                "appeal_success_rates": {},
+                "evidence_effectiveness": {},
+                "recovery_rates": {},
+                "recovery_time_hours": [],
+                "escalation_paths": [],
+                "authorization_requirements": [],
+                "response_times": [],
+                "playbook_answers": {},
+            },
+        )
+        node["denial_patterns"][item.work_object_type] = node["denial_patterns"].get(item.work_object_type, 0) + 1
+        if item.work_object_type in {"Appeal", "Medical Necessity Denial", "Missing Documentation"}:
+            result = Decimal(item.outcome["financial_result"] or "0.00")
+            node["appeal_success_rates"][item.work_object_type] = "high" if result > 0 else "low"
+        for evidence in item.evidence:
+            node["evidence_effectiveness"][evidence.category] = node["evidence_effectiveness"].get(evidence.category, 0) + 1
+        node["recovery_rates"][item.work_object_type] = item.outcome["financial_result"]
+        if item.outcome["resolution_time_hours"] is not None:
+            node["recovery_time_hours"].append(item.outcome["resolution_time_hours"])
+            node["response_times"].append(item.outcome["resolution_time_hours"])
+        if any(action.label.lower().startswith("escalate") for action in item.actions):
+            node["escalation_paths"].append(f"{item.work_object_type} -> manager escalation")
+        if item.work_object_type == "Authorization":
+            node["authorization_requirements"].extend(recommendation["payer_rules"] for recommendation in item.recommendations)
+        node["playbook_answers"][item.work_object_type] = f"What works: lead with {item.evidence[0].title.lower()} and generated {item.documents[0].artifact_type.lower()}."
+    for node in graph.values():
+        if node["recovery_time_hours"]:
+            avg = sum(node["recovery_time_hours"]) / len(node["recovery_time_hours"])
+            node["average_recovery_time_hours"] = round(avg, 1)
+        else:
+            node["average_recovery_time_hours"] = None
+    return {
+        "payers": list(graph.values()),
+        "questions": [
+            {
+                "question": "What typically works for this payer and denial combination?",
+                "answers": {node["payer"]: next(iter(node["playbook_answers"].values()), "No pattern available.") for node in graph.values()},
+            }
+        ],
+    }
+
+
+def build_manager_intervention_system(work_objects: tuple[WorkObject, ...]) -> dict[str, object]:
+    open_items = [item for item in work_objects if item.status != "Completed"]
+    urgent_items = [item for item in open_items if item.priority == "urgent"]
+    blocked_items = [item for item in open_items if item.workflow_status == "blocked"]
+    return {
+        "queue_rebalancing": [
+            {
+                "action": "Redistribute highest-value AR work to available specialists",
+                "target_work_objects": [item.work_object_id for item in urgent_items[:3]],
+                "impact": "Recovered dollars accelerate when top balances are worked first.",
+            }
+        ],
+        "escalation_routing": [
+            {
+                "action": "Escalate unresolved denial and authorization blockers",
+                "target_work_objects": [item.work_object_id for item in blocked_items[:3]],
+                "impact": "Blockers are removed earlier and queue aging declines.",
+            }
+        ],
+        "workload_redistribution": [
+            {
+                "owner": item.owner_name or item.owner_role,
+                "open_work_objects": sum(1 for work in open_items if work.owner_name == item.owner_name),
+            }
+            for item in open_items[:5]
+        ],
+        "priority_overrides": [
+            {
+                "work_object_id": item.work_object_id,
+                "previous_priority": item.priority,
+                "override_priority": "urgent",
+                "reason": "High financial impact and stale timeline activity.",
+            }
+            for item in sorted(open_items, key=lambda work: work.financial_impact or Decimal("0.00"), reverse=True)[:3]
+        ],
+        "capacity_planning": {
+            "open_work_objects": len(open_items),
+            "urgent_work_objects": len(urgent_items),
+            "blocked_work_objects": len(blocked_items),
+        },
+    }
 
 
 def build_work_objects(
@@ -571,3 +816,89 @@ def _money(value: Decimal | None) -> str | None:
 def _priority_rank(priority: str) -> tuple[int, str]:
     order = {"urgent": 0, "high": 1, "normal": 2, "low": 3}
     return (order.get(priority, 4), priority)
+
+
+def _timeline_to_dict(event: WorkTimelineEvent) -> dict[str, object]:
+    return {
+        "event_id": event.event_id,
+        "timestamp": event.timestamp,
+        "label": event.label,
+        "detail": event.detail,
+        "actor": event.actor,
+        "next_step": event.next_step,
+    }
+
+
+def _evidence_to_dict(item: WorkEvidence) -> dict[str, object]:
+    return {
+        "evidence_id": item.evidence_id,
+        "category": item.category,
+        "title": item.title,
+        "detail": item.detail,
+        "source_id": item.source_id,
+        "recovery_probability": _money(item.recovery_probability) if item.recovery_probability is not None else None,
+        "expected_financial_impact": _money(item.expected_financial_impact),
+    }
+
+
+def _document_to_dict(item: GeneratedWorkProduct) -> dict[str, object]:
+    return {
+        "artifact_id": item.artifact_id,
+        "artifact_type": item.artifact_type,
+        "title": item.title,
+        "status": item.status,
+        "summary": item.summary,
+    }
+
+
+def _action_to_dict(item: WorkAction) -> dict[str, object]:
+    return {
+        "action_id": item.action_id,
+        "label": item.label,
+        "owner_role": item.owner_role,
+        "status": item.status,
+        "detail": item.detail,
+    }
+
+
+def _memory_to_dict(item: InstitutionalMemoryEntry) -> dict[str, object]:
+    return {
+        "memory_id": item.memory_id,
+        "summary": item.summary,
+        "linked_outcome": item.linked_outcome,
+        "financial_result": _money(item.financial_result),
+    }
+
+
+def _dedupe_by_id(items, field_name: str):
+    seen = {}
+    for item in items:
+        seen[getattr(item, field_name)] = item
+    return list(seen.values())
+
+
+def _payer_from_account(account_id: str) -> str:
+    parts = account_id.split("-")
+    return parts[-1] if parts else account_id
+
+
+def _stage_map(*, current: str, ordered: tuple[str, ...]) -> list[dict[str, object]]:
+    statuses = []
+    completed = current == "completed"
+    for index, label in enumerate(ordered):
+        if completed:
+            status = "completed"
+        elif index == 0:
+            status = "current"
+        else:
+            status = "up_next"
+        statuses.append({"label": label, "status": status})
+    return statuses
+
+
+def _group_counts(records: list[dict[str, object]], field: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        key = str(record[field])
+        counts[key] = counts.get(key, 0) + 1
+    return counts

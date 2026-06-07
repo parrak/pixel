@@ -35,3 +35,19 @@ def test_work_object_recommendations_are_evidence_first():
     assert recommendation["supporting_documentation"]
     assert recommendation["recovery_probability"]
     assert recommendation["expected_financial_impact"] is not None
+
+
+def test_pipeline_emits_account_and_operational_workspaces():
+    result = run_pipeline()
+
+    assert result.portfolio_snapshot["account_workspaces"]
+    assert result.portfolio_snapshot["denial_resolution_workspaces"]
+    assert result.portfolio_snapshot["ar_recovery_workspaces"]
+    assert result.portfolio_snapshot["manager_intervention_system"]["capacity_planning"]["open_work_objects"] >= 0
+
+
+def test_pipeline_emits_decision_registry_and_payer_graph():
+    result = run_pipeline()
+
+    assert result.portfolio_snapshot["decision_memory_registry"]["records"]
+    assert result.portfolio_snapshot["payer_intelligence_graph"]["payers"]
