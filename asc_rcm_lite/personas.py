@@ -103,7 +103,7 @@ def _items_for_role(work_objects: list[dict[str, object]], *, role: str, work_ty
 
 
 def _persona_item(item: dict[str, object]) -> dict[str, object]:
-    graph = item["workflow_graph"]
+    graph = _workflow_graph_for(item)
     return {
         "work_object_id": item["work_object_id"],
         "title": item["title"],
@@ -120,6 +120,24 @@ def _persona_item(item: dict[str, object]) -> dict[str, object]:
         "days_in_state": graph["days_in_state"],
         "deadline_days_remaining": graph["deadline_days_remaining"],
         "expected_recovery": graph["expected_recovery"],
+    }
+
+
+def _workflow_graph_for(item: dict[str, object]) -> dict[str, object]:
+    graph = item.get("workflow_graph")
+    if graph:
+        return graph
+    owner = item.get("owner_name") or str(item.get("owner_role") or "Operator")
+    current_state = str(item.get("workflow_status") or item.get("status") or "Human Action Required")
+    return {
+        "current_state": current_state,
+        "next_state": "Next Action",
+        "dependency": "Waiting on Operator Review",
+        "blocker": "None",
+        "days_in_state": "-",
+        "deadline_days_remaining": "-",
+        "expected_recovery": item.get("financial_impact"),
+        "owner": owner,
     }
 
 
@@ -142,7 +160,7 @@ def _recommended_actions(items: list[dict[str, object]]) -> list[dict[str, objec
     actions = []
     for item in _priority_items(items)[:6]:
         recommendation = item["recommendations"][0]
-        graph = item["workflow_graph"]
+        graph = _workflow_graph_for(item)
         actions.append(
             {
                 "work_object_id": item["work_object_id"],
@@ -161,7 +179,7 @@ def _priority_items(items: list[dict[str, object]]) -> list[dict[str, object]]:
 
 
 def _blocked_items(items: list[dict[str, object]]) -> list[dict[str, object]]:
-    return [item for item in items if item["workflow_status"] == "blocked" or item["workflow_graph"]["blocker"] not in {"", "None"}]
+    return [item for item in items if item["workflow_status"] == "blocked" or _workflow_graph_for(item)["blocker"] not in {"", "None"}]
 
 
 def _sort_key(item: dict[str, object]) -> tuple[int, Decimal]:

@@ -49,6 +49,20 @@ def test_every_work_object_has_valid_workflow_graph_contract():
         assert current[0]["dependency"]
 
 
+def test_persona_builder_tolerates_legacy_work_objects_without_graph():
+    work_object = run_pipeline().portfolio_snapshot["work_objects"][0].copy()
+    work_object.pop("workflow_graph")
+
+    from asc_rcm_lite.personas import build_persona_experiences
+
+    personas = build_persona_experiences([work_object], recovery_center={})
+
+    routed_items = [item for persona in personas.values() for item in persona["work_items"]]
+    assert routed_items
+    assert routed_items[0]["current_state"]
+    assert routed_items[0]["next_state"] == "Next Action"
+
+
 def test_denial_lifecycle_graph_progresses_from_patient_to_payment():
     item = next(
         work
