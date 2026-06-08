@@ -112,6 +112,7 @@ class WorkObject:
     owner_name: str | None
     status: str
     workflow_status: str
+    workflow_graph: dict[str, object]
     timeline: tuple[WorkTimelineEvent, ...]
     evidence: tuple[WorkEvidence, ...]
     documents: tuple[GeneratedWorkProduct, ...]
@@ -136,6 +137,8 @@ class WorkObject:
         require_non_empty(self.workflow_status, "WorkObject.workflow_status")
         if self.status not in TEAMING_STATES:
             raise ValidationError(f"Unsupported work object status: {self.status}")
+        if not self.workflow_graph:
+            raise ValidationError("WorkObject.workflow_graph must not be empty")
         if not self.timeline:
             raise ValidationError("WorkObject.timeline must not be empty")
         if not self.evidence:
@@ -223,6 +226,7 @@ def build_denial_resolution_workspaces(work_objects: tuple[WorkObject, ...]) -> 
                 "organization_name": item.organization_name,
                 "financial_impact": _money(item.financial_impact),
                 "stages": stages,
+                "workflow_graph": item.workflow_graph,
                 "timeline": [_timeline_to_dict(event) for event in item.timeline],
                 "artifacts": [_document_to_dict(doc) for doc in item.documents],
                 "evidence": [_evidence_to_dict(evidence) for evidence in item.evidence],
@@ -256,6 +260,7 @@ def build_ar_recovery_workspaces(work_objects: tuple[WorkObject, ...]) -> tuple[
                 "financial_impact": _money(financial_impact),
                 "scenario_tags": scenario_tags,
                 "actions": [_action_to_dict(action) for action in item.actions],
+                "workflow_graph": item.workflow_graph,
                 "evidence": [_evidence_to_dict(evidence) for evidence in item.evidence],
                 "generated_artifacts": [_document_to_dict(doc) for doc in item.documents],
                 "timeline": [_timeline_to_dict(event) for event in item.timeline],
@@ -430,6 +435,7 @@ def serialize_work_object(item: WorkObject) -> dict[str, object]:
         "owner_name": item.owner_name,
         "status": item.status,
         "workflow_status": item.workflow_status,
+        "workflow_graph": item.workflow_graph,
         "timeline": [
             {
                 "event_id": event.event_id,
@@ -508,6 +514,7 @@ def _build_work_object(*, task: OperationalTask, case: ASCCase, workflow: Workfl
         owner_name=task.assignee_name,
         status=_teaming_state(task),
         workflow_status=task.status,
+        workflow_graph=_workflow_graph(task=task, case=case, workflow=workflow, claim=claim, work_type=work_type, as_of_date=as_of_date),
         timeline=_timeline(task=task, case=case, workflow=workflow, claim=claim, as_of_date=as_of_date),
         evidence=_evidence(task=task, case=case, claim=claim),
         documents=_documents(task=task, case=case, work_type=work_type),
@@ -625,6 +632,166 @@ def _timeline(*, task: OperationalTask, case: ASCCase, workflow: WorkflowDefinit
             )
         )
     return tuple(events)
+
+
+def _workflow_graph(
+    *,
+    task: OperationalTask,
+    case: ASCCase,
+    workflow: WorkflowDefinition,
+    claim: Claim | None,
+    work_type: str,
+    as_of_date: str,
+) -> dict[str, object]:
+    stage_labels = _lifecycle_labels(work_type)
+    current_index = _current_stage_index(work_type=work_type, task=task, claim=claim)
+    owner_name = task.assignee_name or task.owner_role.replace("_", " ").title()
+    owner_role = task.owner_role
+    team_name = task.team_name or workflow.default_team_name
+    dependency = _current_dependency(work_type=work_type, task=task)
+    blocker = dependency if task.status == "blocked" else _current_blocker(work_type=work_type, task=task)
+    days_in_state = 12 if work_type in {"Appeal", "Medical Necessity Denial", "Missing Documentation"} else max(3, min(task.aging_days or 9, 21))
+    deadline_days_remaining = max(1, 20 - min(days_in_state, 19))
+    stages = []
+    for index, label in enumerate(stage_labels):
+        if index < current_index:
+            status = "complete"
+        elif index == current_index:
+            status = "current"
+        else:
+            status = "next" if index == current_index + 1 else "pending"
+        stages.append(
+            {
+                "state_id": _state_id(label),
+                "label": label,
+                "status": status,
+                "owner": owner_name if status == "current" else _stage_owner(label),
+                "team": team_name if status == "current" else _stage_team(label),
+                "dependency": dependency if status == "current" else _stage_dependency(label),
+                "blocker": blocker if status == "current" else "",
+            }
+        )
+    current = stages[current_index]
+    next_stage = stages[current_index + 1] if current_index + 1 < len(stages) else current
+    return {
+        "object_type": work_type,
+        "current_state": current["label"],
+        "current_state_id": current["state_id"],
+        "owner": owner_name,
+        "owner_role": owner_role,
+        "team": team_name,
+        "dependency": dependency,
+        "blocker": blocker,
+        "waiting_on": dependency,
+        "days_in_state": days_in_state,
+        "deadline_days_remaining": deadline_days_remaining,
+        "expected_recovery": _money(task.amount_at_risk),
+        "next_state": next_stage["label"],
+        "next_state_id": next_stage["state_id"],
+        "stages": stages,
+        "source_claim_id": claim.claim_id if claim else None,
+        "source_case_id": case.case_id,
+    }
+
+
+def _lifecycle_labels(work_type: str) -> list[str]:
+    if work_type in {"Medical Necessity Denial", "Missing Documentation", "Appeal"}:
+        return ["Patient", "Procedure", "Coding", "Claim", "Denial", "Appeal", "Resolution", "Payment"]
+    if work_type == "Authorization":
+        return ["Patient Scheduled", "Authorization", "Procedure", "Coding", "Claim Submission", "Payer Review", "Payment"]
+    if work_type in {"AR Follow-Up", "Underpayment"}:
+        return ["Patient", "Procedure", "Coding", "Claim", "Payer Review", "Recovery Workflow", "Resolution", "Payment"]
+    if work_type in {"Coding Review", "Charge Capture"}:
+        return ["Patient", "Encounter", "Procedure", "Documentation", "Coding Review", "Charge Capture", "Claim Submission", "Payment"]
+    return ["Patient", "Procedure", "Coding", "Claim Submission", "Payer Review", "Payment"]
+
+
+def _current_stage_index(*, work_type: str, task: OperationalTask, claim: Claim | None) -> int:
+    labels = _lifecycle_labels(work_type)
+    if task.status == "completed":
+        return max(len(labels) - 1, 0)
+    if work_type in {"Medical Necessity Denial", "Missing Documentation"}:
+        return labels.index("Appeal") if task.status in {"in_progress", "blocked"} else labels.index("Denial")
+    if work_type == "Appeal":
+        return labels.index("Appeal")
+    if work_type == "Authorization":
+        return labels.index("Authorization")
+    if work_type in {"AR Follow-Up", "Underpayment"}:
+        return labels.index("Recovery Workflow")
+    if work_type in {"Coding Review", "Charge Capture"}:
+        return labels.index("Coding Review")
+    if claim and claim.status == "submitted":
+        return labels.index("Claim Submission") if "Claim Submission" in labels else labels.index("Claim")
+    return min(3, len(labels) - 1)
+
+
+def _current_dependency(*, work_type: str, task: OperationalTask) -> str:
+    if task.status == "blocked":
+        return "Waiting on Payer"
+    if work_type in {"Medical Necessity Denial", "Missing Documentation", "Appeal"}:
+        return "Waiting on Payer" if task.status == "in_progress" else "Waiting on Provider Documentation"
+    if work_type == "Authorization":
+        return "Waiting on Authorization"
+    if work_type in {"Coding Review", "Charge Capture"}:
+        return "Waiting on Coding Review"
+    if work_type in {"AR Follow-Up", "Underpayment"}:
+        return "Waiting on Payer"
+    return "Waiting on Operator Review"
+
+
+def _current_blocker(*, work_type: str, task: OperationalTask) -> str:
+    if task.priority_band == "urgent":
+        return "Deadline risk"
+    if work_type in {"Medical Necessity Denial", "Missing Documentation"}:
+        return "Provider documentation"
+    if work_type == "Authorization":
+        return "Payer requirements"
+    if work_type in {"AR Follow-Up", "Underpayment"}:
+        return "Payer response"
+    if work_type in {"Coding Review", "Charge Capture"}:
+        return "Documentation completeness"
+    return "None"
+
+
+def _stage_owner(label: str) -> str:
+    if label in {"Patient", "Encounter", "Procedure", "Patient Scheduled"}:
+        return "Facility"
+    if label in {"Authorization"}:
+        return "Authorization Specialist"
+    if label in {"Coding", "Coding Review", "Charge Capture", "Documentation"}:
+        return "Coding Team"
+    if label in {"Denial", "Appeal", "Resolution"}:
+        return "Denial Specialist"
+    if label in {"Payer Review", "Payment"}:
+        return "Payer"
+    if label in {"Claim", "Claim Submission", "Recovery Workflow"}:
+        return "AR Specialist"
+    return "Operator"
+
+
+def _stage_team(label: str) -> str:
+    owner = _stage_owner(label)
+    if owner == "Payer":
+        return "External"
+    if owner == "Facility":
+        return "Facility Operations"
+    return owner
+
+
+def _stage_dependency(label: str) -> str:
+    if label in {"Payer Review", "Payment"}:
+        return "Waiting on Payer"
+    if label in {"Authorization"}:
+        return "Waiting on Authorization"
+    if label in {"Coding", "Coding Review", "Charge Capture", "Documentation"}:
+        return "Waiting on Coding Review"
+    if label in {"Denial", "Appeal"}:
+        return "Waiting on Evidence"
+    return "None"
+
+
+def _state_id(label: str) -> str:
+    return label.lower().replace(" ", "_").replace("-", "_")
 
 
 def _evidence(*, task: OperationalTask, case: ASCCase, claim: Claim | None) -> tuple[WorkEvidence, ...]:

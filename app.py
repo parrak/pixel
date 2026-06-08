@@ -219,26 +219,25 @@ def _landing_page() -> str:
 def _demo_page(selected_case_id: str | None = None) -> str:
     result = _load_result()
     portfolio = result.portfolio_snapshot
-    monday = portfolio["monday_morning"]
-    holdco_dashboard = portfolio["holdco_dashboard"]
-    executive_review = portfolio["executive_operating_review"]
-    selected = _selected_case(selected_case_id)
-    selected_task = selected.operational_tasks[0]
+    operator_os = portfolio["operator_os_landing"]
+    personas = portfolio["persona_experiences"]
+    selected_work_object = portfolio["work_objects"][0]
+    graph = selected_work_object["workflow_graph"]
     logo = _logo_svg()
     role_rows = "".join(
-        f"<tr><td>{escape(view['label'])}</td><td>{escape(str(view['queue_size']))}</td><td>${escape(view['revenue_at_risk'])}</td><td>${escape(view['financial_result'])}</td></tr>"
-        for view in portfolio["role_views"]
+        f"<tr><td>{escape(view['label'])}</td><td>{escape(' → '.join(view['primary_objects']))}</td><td>{escape(' · '.join(view['navigation']))}</td><td>{escape(str(view['metrics'].get('open_work', '-')))}</td></tr>"
+        for view in personas.values()
     )
-    history_rows = "".join(
-        f"<tr><td>{escape(record.decision.actor_name)}</td><td>{escape(record.decision.decision)}</td><td>{escape(record.outcome.status)}</td><td>${escape(str(record.outcome.financial_result))}</td><td>{escape(str(record.outcome.resolution_time_hours))}</td></tr>"
-        for record in selected_task.history
+    stage_rows = "".join(
+        f"<tr><td>{escape(stage['label'])}</td><td>{escape(stage['status'])}</td><td>{escape(stage['owner'])}</td><td>{escape(stage['dependency'])}</td></tr>"
+        for stage in graph["stages"]
     )
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Citron Health HoldCo Demo</title>
+  <title>Citron Health Workflow System of Record</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     :root {{
@@ -322,48 +321,45 @@ def _demo_page(selected_case_id: str | None = None) -> str:
         <div class="brand-mark">{logo}</div>
         <div class="brand-wordmark">
           <div class="brand-title">Citron<b> Health</b></div>
-          <div class="brand-subtitle">HoldCo Command Center</div>
+          <div class="brand-subtitle">Workflow System of Record</div>
         </div>
       </div>
       <span class="pill">Synthetic data only. Human review required. No autonomous workflows.</span>
-      <h1 style="margin:.75rem 0 1rem;">HoldCo Command Center inside Citron</h1>
-      <p>{escape(monday['vp_user']['display_name'])}, {escape(monday['vp_user']['title'])}, opens Citron and sees a portfolio value-creation system rather than a detector screen.</p>
-      <ul>{"".join(f"<li>{escape(line)}</li>" for line in holdco_dashboard["focus_today"])}</ul>
+      <h1 style="margin:.75rem 0 1rem;">Workflow System of Record inside Citron</h1>
+      <p>Monday morning starts with operator work, not a marketing page or executive dashboard. Every object shows where it is, who owns it, what is blocking it, and what happens next.</p>
+      <ul>{"".join(f"<li>{escape(line)}</li>" for line in operator_os["sections"])}</ul>
     </section>
     <section class="grid">
-      <article class="card"><div>Portfolio revenue</div><h2>${escape(holdco_dashboard["portfolio_revenue"])}</h2></article>
-      <article class="card"><div>Portfolio EBITDA</div><h2>${escape(holdco_dashboard["portfolio_ebitda"])}</h2></article>
-      <article class="card"><div>Value creation progress</div><h2>{escape(str(holdco_dashboard["value_creation_progress"]["progress_pct"]))}%</h2></article>
-      <article class="card"><div>Critical bottlenecks</div><h2>{escape(", ".join(holdco_dashboard["critical_bottlenecks"]))}</h2></article>
+      <article class="card"><div>Revenue at risk</div><h2>${escape(operator_os["revenue_at_risk"])}</h2></article>
+      <article class="card"><div>Open work</div><h2>{escape(str(operator_os["open_work"]))}</h2></article>
+      <article class="card"><div>Critical appeals</div><h2>{escape(str(operator_os["critical_appeals"]))}</h2></article>
+      <article class="card"><div>Authorizations at risk</div><h2>{escape(str(operator_os["authorizations_at_risk"]))}</h2></article>
+      <article class="card"><div>Coding reviews pending</div><h2>{escape(str(operator_os["coding_reviews_pending"]))}</h2></article>
     </section>
     <section class="two-col">
       <article class="card">
-        <h2>Role queues</h2>
+        <h2>Persona routing</h2>
         <table>
-          <thead><tr><th>Role</th><th>Queue</th><th>Revenue at risk</th><th>Financial result</th></tr></thead>
+          <thead><tr><th>Role</th><th>Primary objects</th><th>Navigation</th><th>Open work</th></tr></thead>
           <tbody>{role_rows}</tbody>
         </table>
       </article>
       <article class="card">
-        <h2>Selected task</h2>
-        <p><strong>{escape(selected_task.title)}</strong></p>
-        <p>{escape(selected_task.description)}</p>
-        <p><strong>Organization:</strong> {escape(selected_task.organization_name or "")}<br>
-        <strong>Facility:</strong> {escape(selected_task.facility_name or "")}<br>
-        <strong>Assignee:</strong> {escape(selected_task.assignee_name or "")}<br>
-        <strong>Recommendation:</strong> {escape(selected_task.recommendations[0].title)}</p>
+        <h2>Selected work object</h2>
+        <p><strong>{escape(selected_work_object["title"])}</strong></p>
+        <p><strong>Current State:</strong> {escape(graph["current_state"])}<br>
+        <strong>Owner:</strong> {escape(graph["owner"])}<br>
+        <strong>Waiting On:</strong> {escape(graph["waiting_on"])}<br>
+        <strong>Days In State:</strong> {escape(str(graph["days_in_state"]))}<br>
+        <strong>Deadline:</strong> {escape(str(graph["deadline_days_remaining"]))} days remaining<br>
+        <strong>Expected Recovery:</strong> ${escape(str(graph["expected_recovery"]))}</p>
       </article>
     </section>
     <section class="card" style="margin-top:18px;">
-      <h2>Executive operating review</h2>
-      <p><strong>Month:</strong> {escape(executive_review["month"])}</p>
-      <p><strong>Required decisions:</strong> {escape(" | ".join(executive_review["required_decisions"]))}</p>
-    </section>
-    <section class="card" style="margin-top:18px;">
-      <h2>Decision intelligence</h2>
+      <h2>Transaction lifecycle graph</h2>
       <table>
-        <thead><tr><th>Actor</th><th>Decision</th><th>Outcome</th><th>Financial result</th><th>Resolution hours</th></tr></thead>
-        <tbody>{history_rows}</tbody>
+        <thead><tr><th>Stage</th><th>Status</th><th>Owner</th><th>Dependency</th></tr></thead>
+        <tbody>{stage_rows}</tbody>
       </table>
     </section>
   </main>

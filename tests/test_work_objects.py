@@ -8,6 +8,7 @@ def test_pipeline_emits_work_objects():
     assert work_objects
     assert all(item["work_object_id"] for item in work_objects)
     assert all(item["timeline"] for item in work_objects)
+    assert all(item["workflow_graph"] for item in work_objects)
     assert all(item["evidence"] for item in work_objects)
     assert all(item["documents"] for item in work_objects)
     assert all(item["recommendations"] for item in work_objects)

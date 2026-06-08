@@ -37,7 +37,9 @@ def test_demo_page_renders_html():
 
     assert response["status"] == "200 OK"
     assert response["headers"]["Content-Type"].startswith("text/html")
-    assert b"HoldCo Command Center inside Citron" in response["body"]
+    assert b"Workflow System of Record inside Citron" in response["body"]
+    assert b"Revenue at risk" in response["body"]
+    assert b"Transaction lifecycle graph" in response["body"]
 
 
 def test_case_api_requires_case_id():

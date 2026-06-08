@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Citron Health | Try Citron HoldCo Demo</title>
+    <title>Citron Health | Workflow System of Record</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -12,7 +12,7 @@
         <img class="brand-mark" src="/ui/assets/logo-mark.svg" alt="Citron Health logo" />
         <span class="brand-wordmark">
           <span class="brand">Citron<b> Health</b></span>
-          <span class="brand-subtitle">HoldCo Command Center</span>
+          <span class="brand-subtitle">Workflow System of Record</span>
         </span>
       </a>
       <nav class="nav">
@@ -23,87 +23,58 @@
     </header>
 
     <main class="page-shell">
-      <section class="page-hero">
-        <span class="eyebrow">Interactive Demo</span>
-        <h1>Run synthetic specialty RCM work inside Citron</h1>
+      <section class="page-hero os-hero">
+        <span class="eyebrow">Monday Morning</span>
+        <h1>Workflow System of Record</h1>
         <p>
-          Load the work queue, inspect work objects, review evidence and generated work product,
-          and follow the workflow from intake to outcome.
+          You are inside a synthetic ASC operation. Start with your work, inspect the object lifecycle,
+          see who owns the current state, and resolve what is blocking recovery.
         </p>
       </section>
 
       <section class="demo-toolbar">
-        <button id="loadDemo" class="button button-primary">Load HoldCo</button>
+        <div>
+          <span class="eyebrow">Try Citron</span>
+          <strong>Logged in as an operator</strong>
+        </div>
         <div class="demo-metrics" id="demoMetrics"></div>
       </section>
 
       <section class="demo-controls">
         <div class="story-card">
-          <h2>Organizations</h2>
-          <div id="organizationList" class="queue-list"></div>
+          <h2>Role</h2>
+          <div id="roleList" class="queue-list"></div>
         </div>
         <div class="story-card">
-          <h2>Work Queue Focus</h2>
+          <h2>My Work</h2>
           <div id="mondayPanel" class="detail-panel">
-            <p>Load the synthetic holdco to begin.</p>
+            <p>Loading the workflow system of record...</p>
           </div>
         </div>
       </section>
 
       <section class="demo-grid">
         <div class="story-card">
-          <h2>Role Queues</h2>
-          <div id="roleList" class="queue-list"></div>
+          <h2>My Queue</h2>
+          <div id="organizationList" class="queue-list"></div>
         </div>
         <div class="story-card">
-          <h2>Work Object</h2>
+          <h2>Workflow Graph</h2>
           <div id="recommendationPanel" class="detail-panel">
-            <p>Select a role queue to inspect work.</p>
+            <p>Select a role to inspect work.</p>
           </div>
         </div>
         <div class="story-card">
-          <h2>Evidence + Timeline</h2>
+          <h2>Timeline</h2>
           <div id="decisionPanel" class="detail-panel">
-            <p>Decision intelligence appears after the holdco loads.</p>
+            <p>Timeline appears with the selected work object.</p>
           </div>
         </div>
         <div class="story-card">
-          <h2>Outcome + Memory</h2>
+          <h2>Recommended Actions</h2>
           <div id="outcomePanel" class="detail-panel">
-            <p>Outcome and financial result appear alongside the selected organization and role queue.</p>
+            <p>Recommended actions appear with the selected role.</p>
           </div>
-        </div>
-      </section>
-
-      <section class="story-card simulator-card">
-        <h2>Acquisition Integration Center</h2>
-        <div class="simulator-grid">
-          <label>
-            Specialty
-            <select id="specialtySelect">
-              <option>ASC</option>
-              <option>Ophthalmology</option>
-              <option>GI</option>
-              <option>Orthopedics</option>
-              <option>Cardiology</option>
-            </select>
-          </label>
-          <label>
-            Headcount
-            <input id="headcountInput" type="number" min="15" max="150" step="5" value="75" />
-          </label>
-          <label>
-            Workflow Maturity
-            <select id="maturitySelect">
-              <option>fragmented</option>
-              <option selected>developing</option>
-              <option>scaled</option>
-            </select>
-          </label>
-        </div>
-        <button id="runSimulator" class="button button-secondary">Generate Integration Plan</button>
-        <div id="simulatorPanel" class="detail-panel" style="margin-top: 1rem;">
-          <p>Run the simulator to see workflow gaps, operational risks, and value creation opportunities.</p>
         </div>
       </section>
     </main>
@@ -113,7 +84,7 @@
         <img class="brand-mark" src="/ui/assets/logo-mark.svg" alt="Citron Health logo" />
         <span class="brand-wordmark">
           <span class="brand">Citron<b> Health</b></span>
-          <span class="brand-subtitle">Specialty Revenue Cycle Platform OS</span>
+          <span class="brand-subtitle">Workflow System of Record</span>
         </span>
       </a>
       <div>

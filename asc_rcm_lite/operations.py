@@ -785,7 +785,10 @@ def build_portfolio_snapshot(
     manager_recovery_operations = {}
     recovery_outcome_tracking = {}
     nimble_recovery_evaluation = {}
+    persona_experiences = {}
+    operator_os_landing = {}
     if cases and as_of_date is not None:
+        from asc_rcm_lite.personas import build_operator_os_landing, build_persona_experiences
         from asc_rcm_lite.revenue_recovery import (
             build_appeal_workspace,
             build_denial_recovery_factory,
@@ -827,6 +830,8 @@ def build_portfolio_snapshot(
         manager_recovery_operations = build_manager_recovery_operations(built_work_objects)
         recovery_outcome_tracking = build_recovery_outcome_tracking(built_work_objects)
         nimble_recovery_evaluation = build_nimble_evaluation_scenario(built_work_objects)
+        persona_experiences = build_persona_experiences(work_objects_payload, recovery_center=recovery_command_center)
+        operator_os_landing = build_operator_os_landing(persona_experiences=persona_experiences, recovery_center=recovery_command_center)
 
     return {
         "holdco": {
@@ -942,6 +947,8 @@ def build_portfolio_snapshot(
             for item in playbooks
         ],
         "work_objects": work_objects_payload,
+        "operator_os_landing": operator_os_landing,
+        "persona_experiences": persona_experiences,
         "account_workspaces": account_workspaces,
         "denial_resolution_workspaces": denial_workspaces,
         "ar_recovery_workspaces": ar_workspaces,

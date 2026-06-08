@@ -21,7 +21,8 @@ from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, run_pipeline
 
 
 ROLE_LABELS = {
-    "manager": "VP Revenue Cycle",
+    "manager": "Manager",
+    "vp_revenue_cycle": "VP Revenue Cycle",
     "denial_specialist": "Denial Specialist",
     "biller": "AR Specialist",
     "coder": "Coding Specialist",
@@ -53,6 +54,32 @@ def _format_number(value: object) -> str:
     if value in (None, "", "None"):
         return "-"
     return str(value)
+
+
+def _workflow_graph_html(graph: dict[str, object]) -> str:
+    stages = graph.get("stages", [])
+    nodes = []
+    for stage in stages:
+        status = stage.get("status", "pending")
+        nodes.append(
+            f"""
+            <div class="graph-node graph-{status}">
+              <strong>{stage.get("label", "-")}</strong>
+              <span>{stage.get("owner", "-")}</span>
+            </div>
+            """
+        )
+    return f"""
+    <div class="graph-summary">
+      <div><span>Current State</span><strong>{graph.get("current_state", "-")}</strong></div>
+      <div><span>Owner</span><strong>{graph.get("owner", "-")}</strong></div>
+      <div><span>Waiting On</span><strong>{graph.get("waiting_on", "-")}</strong></div>
+      <div><span>Days In State</span><strong>{graph.get("days_in_state", "-")}</strong></div>
+      <div><span>Deadline</span><strong>{graph.get("deadline_days_remaining", "-")} days remaining</strong></div>
+      <div><span>Expected Recovery</span><strong>{_format_money(graph.get("expected_recovery"))}</strong></div>
+    </div>
+    <div class="workflow-graph">{''.join(nodes)}</div>
+    """
 
 
 st.set_page_config(page_title="Citron Health Workflow System", layout="wide")
@@ -119,6 +146,77 @@ st.markdown(
         letter-spacing: 0.08em;
         font-weight: 700;
     }
+    .workflow-graph {
+        display: flex;
+        gap: 0.65rem;
+        overflow-x: auto;
+        padding: 0.4rem 0 0.9rem;
+    }
+    .graph-node {
+        min-width: 8.7rem;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 0.75rem;
+        background: var(--surface);
+        position: relative;
+    }
+    .graph-node:not(:last-child)::after {
+        content: ">";
+        position: absolute;
+        right: -0.55rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--ink-500);
+        font-weight: 800;
+    }
+    .graph-node strong,
+    .graph-node span {
+        display: block;
+    }
+    .graph-node span {
+        color: var(--ink-500);
+        font-size: 0.78rem;
+        margin-top: 0.25rem;
+    }
+    .graph-complete { background: var(--pine-50); }
+    .graph-current {
+        border-color: var(--pine-600);
+        box-shadow: 0 0 0 2px rgba(27, 122, 94, 0.12);
+    }
+    .graph-next { background: var(--citron-100); }
+    .graph-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin: 0.7rem 0 0.9rem;
+    }
+    .graph-summary div {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 0.75rem;
+        background: var(--surface);
+    }
+    .graph-summary span,
+    .persona-nav span {
+        display: block;
+        color: var(--ink-500);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+    }
+    .persona-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin: 0.75rem 0;
+    }
+    .persona-nav strong {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.45rem 0.75rem;
+        background: var(--surface);
+    }
     .eyebrow { color: #d8f0c7; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.75rem; font-weight: 700; }
     .metric-label { color: var(--ink-500); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
     .metric-value { color: var(--ink-900); font-size: 1.6rem; font-weight: 800; }
@@ -160,6 +258,8 @@ payer_playbooks = portfolio.get("payer_playbooks", {})
 manager_recovery_operations = portfolio.get("manager_recovery_operations", {})
 recovery_outcomes = portfolio.get("recovery_outcome_tracking", {})
 nimble_recovery = portfolio.get("nimble_recovery_evaluation", {})
+persona_experiences = portfolio.get("persona_experiences", {})
+operator_os_landing = portfolio.get("operator_os_landing", {})
 orgs = portfolio["organizations"]
 org_names = [org["name"] for org in orgs]
 st.sidebar.image(str(LOGO_PATH), width=44)
@@ -215,12 +315,11 @@ st.markdown(
           <div class="brand-subtitle" style="color:#d8f0c7;">Workflow System Of Record</div>
         </div>
       </div>
-      <div class="eyebrow">Workflow-Native Reset</div>
-      <h1 style="margin:0.2rem 0 0.5rem 0;">Work Begins With The Work Object</h1>
+      <div class="eyebrow">Monday Morning</div>
+      <h1 style="margin:0.2rem 0 0.5rem 0;">Workflow System Of Record</h1>
       <p style="margin:0;max-width:58rem;">
-        Citron exists to help AR, denial, authorization, and coding teams resolve work. The primary object is now the
-        work object: claim-linked operational work with a visible timeline, evidence, generated work product, actions,
-        outcome, and institutional memory.
+        Operators begin inside their work. Citron shows the object, where it sits in the transaction lifecycle,
+        who owns it, what is blocking it, and what happens next.
       </p>
     </div>
     """,
@@ -234,23 +333,23 @@ decision_intelligence = portfolio["decision_intelligence"]
 
 metric_cols = st.columns(5)
 metric_cols[0].markdown(
-    f"<div class='subtle'><div class='metric-label'>Portfolio Revenue</div><div class='metric-value'>${holdco_dashboard['portfolio_revenue']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Revenue At Risk</div><div class='metric-value'>{_format_money(operator_os_landing.get('revenue_at_risk'))}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[1].markdown(
-    f"<div class='subtle'><div class='metric-label'>Portfolio EBITDA</div><div class='metric-value'>${holdco_dashboard['portfolio_ebitda']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Open Work</div><div class='metric-value'>{_format_number(operator_os_landing.get('open_work'))}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[2].markdown(
-    f"<div class='subtle'><div class='metric-label'>Revenue At Risk</div><div class='metric-value'>${holdco_dashboard['revenue_at_risk']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Critical Appeals</div><div class='metric-value'>{_format_number(operator_os_landing.get('critical_appeals'))}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[3].markdown(
-    f"<div class='subtle'><div class='metric-label'>Open Work</div><div class='metric-value'>{holdco_dashboard['open_work']}</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Auths At Risk</div><div class='metric-value'>{_format_number(operator_os_landing.get('authorizations_at_risk'))}</div></div>",
     unsafe_allow_html=True,
 )
 metric_cols[4].markdown(
-    f"<div class='subtle'><div class='metric-label'>Value Creation</div><div class='metric-value'>{_format_number(holdco_dashboard['value_creation_progress']['progress_pct'])}%</div></div>",
+    f"<div class='subtle'><div class='metric-label'>Coding Pending</div><div class='metric-value'>{_format_number(operator_os_landing.get('coding_reviews_pending'))}</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -286,6 +385,24 @@ with tabs[0]:
         "Work-first operating console for denials, appeals, underpayments, and AR follow-up. "
         "The center shows what to work, what to escalate, what is blocked, and where money is trapped."
     )
+    selected_persona = persona_experiences.get(selected_role_key, {})
+    st.markdown(
+        f"""
+        <div class="card">
+          <div class="eyebrow">Role-Specific OS</div>
+          <h3 style="margin:0.25rem 0;">{selected_persona.get('label', selected_role)}</h3>
+          <p style="margin:0.35rem 0 0.6rem;color:var(--ink-500);">{selected_persona.get('operator_question', 'What work needs to get done?')}</p>
+          <div class="persona-nav"><span>Navigation</span>{''.join(f"<strong>{item}</strong>" for item in selected_persona.get('navigation', []))}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    persona_cols = st.columns(5)
+    persona_cols[0].dataframe(selected_persona.get("my_work", []), use_container_width=True)
+    persona_cols[1].dataframe(selected_persona.get("my_queue", []), use_container_width=True)
+    persona_cols[2].dataframe(selected_persona.get("todays_priorities", []), use_container_width=True)
+    persona_cols[3].dataframe(selected_persona.get("blocked_work", []), use_container_width=True)
+    persona_cols[4].dataframe(selected_persona.get("recommended_actions", []), use_container_width=True)
     recovery_metrics = recovery_center.get("metrics", {})
     recovery_cols = st.columns(5)
     recovery_cols[0].metric("Revenue At Risk", _format_money(recovery_metrics.get("revenue_at_risk")))
@@ -432,6 +549,8 @@ with tabs[1]:
         evidence_col, artifact_col = st.columns(2)
         evidence_col.dataframe(selected_account_workspace["evidence"], use_container_width=True)
         artifact_col.dataframe(selected_account_workspace["generated_artifacts"], use_container_width=True)
+        st.markdown("#### Workflow Graph")
+        st.markdown(_workflow_graph_html(selected_account_workspace["open_work_objects"][0]["workflow_graph"]), unsafe_allow_html=True)
         st.dataframe(selected_account_workspace["activity_history"], use_container_width=True)
     else:
         st.info("No account workspace available.")
@@ -479,6 +598,8 @@ with tabs[2]:
     timeline_col, evidence_col = st.columns(2)
     timeline_col.dataframe(selected_work_object["timeline"], use_container_width=True)
     evidence_col.dataframe(selected_work_object["evidence"], use_container_width=True)
+    st.markdown("#### Workflow Graph")
+    st.markdown(_workflow_graph_html(selected_work_object["workflow_graph"]), unsafe_allow_html=True)
     docs_col, memory_col = st.columns(2)
     docs_col.dataframe(selected_work_object["documents"], use_container_width=True)
     memory_col.dataframe(selected_work_object["institutional_memory"], use_container_width=True)
@@ -540,6 +661,8 @@ with tabs[4]:
         left, right = st.columns(2)
         left.dataframe(selected_denial["stages"], use_container_width=True)
         right.dataframe(selected_denial["timeline"], use_container_width=True)
+        st.markdown("#### Workflow Graph")
+        st.markdown(_workflow_graph_html(selected_denial["workflow_graph"]), unsafe_allow_html=True)
         artifact_col, evidence_col = st.columns(2)
         artifact_col.dataframe(selected_denial["artifacts"], use_container_width=True)
         evidence_col.dataframe(selected_denial["evidence"], use_container_width=True)
@@ -563,6 +686,8 @@ with tabs[5]:
         left, right = st.columns(2)
         left.dataframe(selected_ar["actions"], use_container_width=True)
         right.dataframe(selected_ar["timeline"], use_container_width=True)
+        st.markdown("#### Workflow Graph")
+        st.markdown(_workflow_graph_html(selected_ar["workflow_graph"]), unsafe_allow_html=True)
         evidence_col, artifact_col = st.columns(2)
         evidence_col.dataframe(selected_ar["evidence"], use_container_width=True)
         artifact_col.dataframe(selected_ar["generated_artifacts"], use_container_width=True)
