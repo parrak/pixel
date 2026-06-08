@@ -150,6 +150,16 @@ ar_workspaces = portfolio.get("ar_recovery_workspaces", [])
 decision_registry = portfolio.get("decision_memory_registry", {})
 payer_graph = portfolio.get("payer_intelligence_graph", {})
 manager_system = portfolio.get("manager_intervention_system", {})
+recovery_center = portfolio.get("revenue_recovery_command_center", {})
+denial_factory = portfolio.get("denial_recovery_factory", {})
+appeal_workspace = portfolio.get("appeal_workspace", {})
+evidence_engine = portfolio.get("evidence_engine", {})
+recovery_copilot_outputs = portfolio.get("recovery_copilot_outputs", {})
+similar_recoveries = portfolio.get("similar_recoveries", {})
+payer_playbooks = portfolio.get("payer_playbooks", {})
+manager_recovery_operations = portfolio.get("manager_recovery_operations", {})
+recovery_outcomes = portfolio.get("recovery_outcome_tracking", {})
+nimble_recovery = portfolio.get("nimble_recovery_evaluation", {})
 orgs = portfolio["organizations"]
 org_names = [org["name"] for org in orgs]
 st.sidebar.image(str(LOGO_PATH), width=44)
@@ -246,6 +256,7 @@ metric_cols[4].markdown(
 
 tabs = st.tabs(
     [
+        "Revenue Recovery",
         "Account Workspace",
         "Work Queue",
         "Operational Journeys",
@@ -270,6 +281,119 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
+    st.subheader("Revenue Recovery Command Center")
+    st.caption(
+        "Work-first operating console for denials, appeals, underpayments, and AR follow-up. "
+        "The center shows what to work, what to escalate, what is blocked, and where money is trapped."
+    )
+    recovery_metrics = recovery_center.get("metrics", {})
+    recovery_cols = st.columns(5)
+    recovery_cols[0].metric("Revenue At Risk", _format_money(recovery_metrics.get("revenue_at_risk")))
+    recovery_cols[1].metric("Recoverable Revenue", _format_money(recovery_metrics.get("recoverable_revenue")))
+    recovery_cols[2].metric("Appeals In Progress", _format_number(recovery_metrics.get("appeals_in_progress")))
+    recovery_cols[3].metric("Near Deadline", _format_number(recovery_metrics.get("claims_near_deadline")))
+    recovery_cols[4].metric("Recovered This Month", _format_money(recovery_metrics.get("recovered_this_month")))
+
+    recovery_subtabs = st.tabs(
+        [
+            "Today",
+            "Denial Factory",
+            "Appeals",
+            "Evidence",
+            "Work Product",
+            "Similar Recoveries",
+            "Payer Playbooks",
+            "Manager Ops",
+            "Outcomes",
+            "Nimble Scenario",
+        ]
+    )
+    with recovery_subtabs[0]:
+        st.markdown("#### Work Today")
+        today_left, today_right = st.columns([1.1, 0.9])
+        today_left.dataframe(recovery_center.get("work_today", []), use_container_width=True)
+        today_right.dataframe(recovery_center.get("escalate", []), use_container_width=True)
+        st.markdown("#### Money Trapped")
+        st.dataframe(recovery_center.get("money_trapped", []), use_container_width=True)
+        st.json(recovery_center.get("dataset_summary", {}))
+    with recovery_subtabs[1]:
+        st.markdown("#### Denial Recovery Factory")
+        st.caption("Every denial opens with timeline, evidence, required documents, recommendation, and outcome.")
+        st.dataframe(denial_factory.get("denials", [])[:40], use_container_width=True)
+        st.write("Supported denial types:", ", ".join(denial_factory.get("supported_types", [])))
+    with recovery_subtabs[2]:
+        st.markdown("#### Appeal Workspace")
+        appeals = appeal_workspace.get("appeals", [])
+        st.dataframe(
+            [
+                {
+                    "appeal_id": item["appeal_id"],
+                    "payer": item["denial"]["payer"],
+                    "denial_type": item["denial"]["denial_type"],
+                    "financial_impact": _format_money(item["denial"]["financial_impact"]),
+                    "submission_status": item["submission_status"],
+                    "package_status": item["appeal_package"]["status"],
+                }
+                for item in appeals[:40]
+            ],
+            use_container_width=True,
+        )
+        if appeals:
+            st.json(appeals[0])
+    with recovery_subtabs[3]:
+        st.markdown("#### Evidence Engine")
+        evidence_packets = evidence_engine.get("evidence_packets", [])
+        st.dataframe(
+            [
+                {
+                    "claim_id": item["claim_id"],
+                    "payer": item["payer"],
+                    "denial_type": item["denial_type"],
+                    "packet_readiness": item["packet_readiness"],
+                }
+                for item in evidence_packets[:50]
+            ],
+            use_container_width=True,
+        )
+        st.write("Evidence types:", ", ".join(evidence_engine.get("evidence_types", [])))
+    with recovery_subtabs[4]:
+        st.markdown("#### Generated Work Product")
+        st.caption("Copilot output is represented as usable operational artifacts, not chat.")
+        st.dataframe(recovery_copilot_outputs.get("outputs", []), use_container_width=True)
+    with recovery_subtabs[5]:
+        st.markdown("#### Similar Recovery Intelligence")
+        st.dataframe(similar_recoveries.get("patterns", []), use_container_width=True)
+    with recovery_subtabs[6]:
+        st.markdown("#### Payer Playbooks")
+        st.dataframe(payer_playbooks.get("playbooks", []), use_container_width=True)
+    with recovery_subtabs[7]:
+        st.markdown("#### Manager Recovery Operations")
+        mgr_left, mgr_right = st.columns(2)
+        mgr_left.dataframe(manager_recovery_operations.get("prioritize_revenue", []), use_container_width=True)
+        mgr_right.dataframe(manager_recovery_operations.get("escalate_cases", []), use_container_width=True)
+        st.markdown("#### Reassign Work")
+        st.dataframe(manager_recovery_operations.get("reassign_work", []), use_container_width=True)
+        st.markdown("#### Capacity")
+        st.dataframe(manager_recovery_operations.get("allocate_capacity", []), use_container_width=True)
+    with recovery_subtabs[8]:
+        st.markdown("#### Recovery Outcomes")
+        st.json(recovery_outcomes.get("rollup", {}))
+        st.dataframe(recovery_outcomes.get("recoveries", []), use_container_width=True)
+    with recovery_subtabs[9]:
+        st.markdown("#### Nimble Evaluation Scenario")
+        st.caption(nimble_recovery.get("scenario", ""))
+        nimble_cols = st.columns(4)
+        nimble_cols[0].metric("Denials", _format_number(nimble_recovery.get("denials")))
+        nimble_cols[1].metric("Revenue At Risk", _format_money(nimble_recovery.get("revenue_at_risk")))
+        nimble_cols[2].metric("Likely Recovery", _format_money(nimble_recovery.get("likely_recovery")))
+        nimble_cols[3].metric("Recovered Walkthrough", _format_money(nimble_recovery.get("walkthrough_outcome", {}).get("recovered_revenue")))
+        scenario_left, scenario_right = st.columns(2)
+        scenario_left.dataframe(nimble_recovery.get("work_first", []), use_container_width=True)
+        scenario_right.dataframe(nimble_recovery.get("where_money_is_trapped", []), use_container_width=True)
+        st.write(nimble_recovery.get("actions_maximizing_collections", []))
+        st.json(nimble_recovery.get("walkthrough_outcome", {}))
+
+with tabs[1]:
     st.subheader("Account Workspace")
     st.caption("Primary operating screen. Financial impact, claim summary, timeline, evidence, work objects, artifacts, actions, prior outcomes, and activity history live in one workspace.")
     if selected_account_workspace:
@@ -312,7 +436,7 @@ with tabs[0]:
     else:
         st.info("No account workspace available.")
 
-with tabs[1]:
+with tabs[2]:
     st.subheader(f"{selected_role} Work Queue")
     st.caption("Operators begin with work. Each item is a workflow-native work object with its own timeline, evidence, work product, actions, outcome, and memory.")
     work_rows = [
@@ -359,7 +483,7 @@ with tabs[1]:
     docs_col.dataframe(selected_work_object["documents"], use_container_width=True)
     memory_col.dataframe(selected_work_object["institutional_memory"], use_container_width=True)
 
-with tabs[2]:
+with tabs[3]:
     st.subheader("End-to-End Operational Journeys")
     st.caption("Run a realistic day-in-the-life workflow from queue identification through decision, outcome, and impact.")
     journey_options = {
@@ -399,7 +523,7 @@ with tabs[2]:
         history_right.json({"claim_history": journey["claim_history"]})
         history_third.json({"prior_follow_up_activity": journey["prior_follow_up_activity"]})
 
-with tabs[3]:
+with tabs[4]:
     st.subheader("Denial Resolution Workspace")
     st.caption("Complete denial lifecycle from receipt through payment.")
     if denial_workspaces:
@@ -422,7 +546,7 @@ with tabs[3]:
     else:
         st.info("No denial workspace available.")
 
-with tabs[4]:
+with tabs[5]:
     st.subheader("AR Recovery Workspace")
     st.caption("AR specialists can review, research, document, escalate, and resolve work without leaving Citron.")
     if ar_workspaces:
@@ -445,12 +569,12 @@ with tabs[4]:
     else:
         st.info("No AR recovery workspace available.")
 
-with tabs[5]:
+with tabs[6]:
     st.subheader("Manager Intervention System")
     st.caption("Managers operate. They rebalance work, remove blockers, override priorities, and create measurable workflow impact.")
     st.json(manager_system)
 
-with tabs[6]:
+with tabs[7]:
     st.subheader("Decision Memory")
     st.caption("Every completed work object records problem, evidence, recommendation, decision, resolution, operator, payer, and financial result.")
     st.dataframe(decision_registry.get("records", []), use_container_width=True)
@@ -458,13 +582,13 @@ with tabs[6]:
     left.json({"similar_cases": decision_registry.get("similar_cases", {}), "successful_recoveries": decision_registry.get("successful_recoveries", [])[:4]})
     right.json({"failed_recoveries": decision_registry.get("failed_recoveries", []), "payer_history": decision_registry.get("payer_history", {})})
 
-with tabs[7]:
+with tabs[8]:
     st.subheader("Payer Intelligence Graph")
     st.caption("Workflow outcomes become payer operating knowledge: denial patterns, appeal success, evidence effectiveness, recovery time, escalation paths, and response times.")
     st.json(payer_graph.get("questions", []))
     st.dataframe(payer_graph.get("payers", []), use_container_width=True)
 
-with tabs[8]:
+with tabs[9]:
     st.subheader("Nimble Evaluation Mode")
     st.caption("10-minute operator walkthrough: revenue at risk appears, work is created, specialists process work, managers intervene, work product is generated, recovery happens, and knowledge compounds.")
     nimble_steps = [
@@ -483,7 +607,7 @@ with tabs[8]:
         }
     )
 
-with tabs[9]:
+with tabs[10]:
     st.subheader("HoldCo Dashboard")
     st.caption("What should leadership focus on today across the specialty RCM platform?")
     lead_left, lead_right = st.columns([1.05, 0.95])
@@ -535,7 +659,7 @@ with tabs[9]:
         }
     )
 
-with tabs[10]:
+with tabs[11]:
     st.subheader("Value Creation System")
     st.caption("Operational changes tied directly to expected and realized EBITDA impact.")
     initiative_rows = [
@@ -554,7 +678,7 @@ with tabs[10]:
     selected_initiative = portfolio["value_creation_initiatives"][0]
     st.json(selected_initiative)
 
-with tabs[11]:
+with tabs[12]:
     st.subheader("Portfolio Benchmarking")
     st.caption("Compare every organization to the portfolio average, top quartile, and best-in-class.")
     benchmark_org = next(item for item in portfolio["portfolio_benchmarks"]["organizations"] if item["name"] == selected_org_name)
@@ -573,7 +697,7 @@ with tabs[11]:
     st.dataframe(benchmark_rows, use_container_width=True)
     st.info(portfolio["portfolio_benchmarks"]["narrative"])
 
-with tabs[12]:
+with tabs[13]:
     st.subheader("Playbook System")
     st.caption("Reusable operating playbooks standardize acquired operators across the platform.")
     selected_playbook_name = st.selectbox("Playbook", [item["name"] for item in portfolio["playbooks"]], key="playbook_selector")
@@ -591,7 +715,7 @@ with tabs[12]:
     st.dataframe(playbook_rows, use_container_width=True)
     st.json(playbook)
 
-with tabs[13]:
+with tabs[14]:
     review = portfolio["executive_operating_review"]
     st.subheader("Executive Operating Review")
     st.caption("Monthly board-style readout for leadership, operating partners, and future executives.")
@@ -612,7 +736,7 @@ with tabs[13]:
     )
     st.json({"risks": review["risks"], "wins": review["wins"], "benchmark_excerpt": review["benchmark_excerpt"]})
 
-with tabs[14]:
+with tabs[15]:
     monday = portfolio["monday_morning"]
     st.subheader(monday["title"])
     st.caption("Guided day-in-the-life experience for an acquired ASC operator running inside Citron.")
@@ -628,7 +752,7 @@ with tabs[14]:
     assign.json({"assignments": monday["assignments"], "critical_work": monday["critical_work"]})
     outcomes.json({"workflow_bottlenecks": monday["workflow_bottlenecks"], "outcomes": monday["outcomes"]})
 
-with tabs[15]:
+with tabs[16]:
     st.subheader(f"{selected_role} Queue")
     st.caption(f"Operational queue for {selected_org_name}. This view is role-first rather than detector-first.")
     role_rows = [
@@ -681,7 +805,7 @@ with tabs[15]:
         unsafe_allow_html=True,
     )
 
-with tabs[16]:
+with tabs[17]:
     st.subheader("Decision Intelligence Foundation")
     st.caption("Recommendation -> decision -> outcome memory with portfolio-wide visibility into what creates value.")
     st.json(decision_intelligence["summary"])
@@ -717,7 +841,7 @@ with tabs[16]:
             }
         )
 
-with tabs[17]:
+with tabs[18]:
     st.subheader("Workflow Definition Engine")
     st.caption("Workflow definitions are configuration-backed and future specialties can plug into the same engine.")
     workflow = next(workflow for workflow in result.workflow_definitions if workflow.name == selected_workflow)
@@ -743,7 +867,7 @@ with tabs[17]:
     ]
     st.dataframe(stage_rows, use_container_width=True)
 
-with tabs[18]:
+with tabs[19]:
     st.subheader("Acquisition Integration Center")
     st.caption("Post-acquisition integration experience that translates workflow standardization into value creation.")
     col1, col2, col3 = st.columns(3)
@@ -781,7 +905,7 @@ with tabs[18]:
         }
     )
 
-with tabs[19]:
+with tabs[20]:
     st.subheader("Legacy Features")
     st.caption("Existing ASC RCM features remain in the system as workflow-supporting modules.")
     legacy_tabs = st.tabs(["Coding", "A/R", "Denials", "Workflow Assistant", "Payer Intelligence", "Case Detail"])

@@ -775,7 +775,29 @@ def build_portfolio_snapshot(
     decision_registry = {}
     payer_graph = {}
     manager_interventions = {}
+    recovery_command_center = {}
+    denial_recovery_factory = {}
+    appeal_workspace = {}
+    evidence_engine = {}
+    recovery_copilot_outputs = {}
+    similar_recoveries = {}
+    payer_playbooks = {}
+    manager_recovery_operations = {}
+    recovery_outcome_tracking = {}
+    nimble_recovery_evaluation = {}
     if cases and as_of_date is not None:
+        from asc_rcm_lite.revenue_recovery import (
+            build_appeal_workspace,
+            build_denial_recovery_factory,
+            build_evidence_engine,
+            build_manager_recovery_operations,
+            build_nimble_evaluation_scenario,
+            build_payer_playbooks,
+            build_recovery_copilot_outputs,
+            build_recovery_outcome_tracking,
+            build_revenue_recovery_center,
+            build_similar_recovery_intelligence,
+        )
         from asc_rcm_lite.work_objects import (
             build_account_workspaces,
             build_ar_recovery_workspaces,
@@ -795,6 +817,16 @@ def build_portfolio_snapshot(
         decision_registry = build_decision_intelligence_registry(built_work_objects)
         payer_graph = build_payer_intelligence_graph(built_work_objects)
         manager_interventions = build_manager_intervention_system(built_work_objects)
+        recovery_command_center = build_revenue_recovery_center(built_work_objects)
+        denial_recovery_factory = build_denial_recovery_factory(built_work_objects)
+        appeal_workspace = build_appeal_workspace(built_work_objects)
+        evidence_engine = build_evidence_engine(built_work_objects)
+        recovery_copilot_outputs = build_recovery_copilot_outputs(built_work_objects)
+        similar_recoveries = build_similar_recovery_intelligence(built_work_objects)
+        payer_playbooks = build_payer_playbooks(built_work_objects)
+        manager_recovery_operations = build_manager_recovery_operations(built_work_objects)
+        recovery_outcome_tracking = build_recovery_outcome_tracking(built_work_objects)
+        nimble_recovery_evaluation = build_nimble_evaluation_scenario(built_work_objects)
 
     return {
         "holdco": {
@@ -916,6 +948,16 @@ def build_portfolio_snapshot(
         "decision_memory_registry": decision_registry,
         "payer_intelligence_graph": payer_graph,
         "manager_intervention_system": manager_interventions,
+        "revenue_recovery_command_center": recovery_command_center,
+        "denial_recovery_factory": denial_recovery_factory,
+        "appeal_workspace": appeal_workspace,
+        "evidence_engine": evidence_engine,
+        "recovery_copilot_outputs": recovery_copilot_outputs,
+        "similar_recoveries": similar_recoveries,
+        "payer_playbooks": payer_playbooks,
+        "manager_recovery_operations": manager_recovery_operations,
+        "recovery_outcome_tracking": recovery_outcome_tracking,
+        "nimble_recovery_evaluation": nimble_recovery_evaluation,
         "decision_intelligence": decision_intelligence,
         "executive_operating_review": executive_review,
         "acquisition_defaults": {

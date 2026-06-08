@@ -97,8 +97,10 @@ def available_workflow_journeys() -> tuple[str, ...]:
     return (
         "missing_documentation_denial",
         "medical_necessity_appeal",
+        "underpayment_recovery",
         "ar_follow_up",
         "authorization_failure",
+        "manager_intervention",
     )
 
 
@@ -117,10 +119,14 @@ def execute_workflow_journey(journey_id: str, *, as_of_date: str = DEFAULT_AS_OF
         return execute_missing_documentation_denial_journey(as_of_date=as_of_date)
     if journey_id == "medical_necessity_appeal":
         return execute_medical_necessity_appeal_journey(as_of_date=as_of_date)
+    if journey_id == "underpayment_recovery":
+        return execute_underpayment_recovery_journey(as_of_date=as_of_date)
     if journey_id == "ar_follow_up":
         return execute_ar_follow_up_workflow_journey(as_of_date=as_of_date)
     if journey_id == "authorization_failure":
         return execute_authorization_failure_journey(as_of_date=as_of_date)
+    if journey_id == "manager_intervention":
+        return execute_manager_intervention_workflow_journey(as_of_date=as_of_date)
     raise ValueError(f"Unsupported workflow journey: {journey_id}")
 
 
@@ -663,6 +669,67 @@ def execute_ar_follow_up_workflow_journey(*, as_of_date: str = DEFAULT_AS_OF_DAT
         final_outcome=run.final_outcome,
         institutional_memory_update=run.institutional_memory_update,
         workflow_trace=run.workflow_trace,
+    )
+
+
+def execute_underpayment_recovery_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    pipeline = run_pipeline(case_id="ASC-CASE-007", as_of_date=as_of_date)
+    case = next(case for case in load_asc_cases() if case.case_id == "ASC-CASE-007")
+    task = next(task for task in pipeline.cases[0].operational_tasks if task.task_type == "underpayment")
+    work_object = serialize_work_object(
+        build_work_objects(cases=(case,), tasks=(task,), workflows=pipeline.workflow_definitions, as_of_date=as_of_date)[0]
+    )
+    return OperationalJourneyRun(
+        journey_id="underpayment_recovery",
+        persona="AR Specialist",
+        title="Underpayment Recovery",
+        scenario="Claim -> contract variance -> payer follow-up -> corrected payment -> recovery.",
+        queue_snapshot=work_object,
+        payer_history=_payer_history(case.claims[0].claim_id, base_date=as_of_date),
+        claim_history=_claim_history(case.claims[0].claim_id, base_date=as_of_date, expected_reimbursement=Decimal("400.00")),
+        prior_follow_up_activity=_prior_follow_up(case.claims[0].claim_id, base_date=as_of_date),
+        recommendation_history=tuple(work_object["recommendations"]),
+        steps=(
+            JourneyStep("1", "Claim", "biller", "Agent Processing", "Human Action Required", "Paid claim is matched against expected contract allowed amount."),
+            JourneyStep("2", "Contract Variance", "biller", "Human Action Required", "Human Action Required", "Citron surfaces recoverable underpayment with payer and claim evidence."),
+            JourneyStep("3", "Payer Follow-Up", "biller", "Human Action Required", "Human Action Required", "Operator uses claim history and payer playbook to request reprocessing."),
+            JourneyStep("4", "Corrected Payment", "biller", "Human Action Required", "Completed", "Corrected payment is posted and variance is closed.", financial_impact=Decimal("400.00")),
+            JourneyStep("5", "Recovery Memory", "biller", "Completed", "Completed", "Outcome updates similar recoveries and payer intelligence."),
+        ),
+        metrics_before={"open_work": 1, "revenue_at_risk": "400.00", "recovered_revenue": "0.00"},
+        metrics_after={"open_work": 0, "revenue_at_risk": "0.00", "recovered_revenue": "400.00"},
+        final_task=work_object,
+        final_outcome={"status": "recovered", "financial_result": "400.00", "summary": "Underpayment recovered through payer reprocessing."},
+        institutional_memory_update={"entries": len(work_object["institutional_memory"]) + 1, "pattern": "Underpayment recovery"},
+        workflow_trace=tuple(),
+    )
+
+
+def execute_manager_intervention_workflow_journey(*, as_of_date: str = DEFAULT_AS_OF_DATE) -> OperationalJourneyRun:
+    manager_run = execute_ar_manager_journey(as_of_date=as_of_date)
+    return OperationalJourneyRun(
+        journey_id="manager_intervention",
+        persona="AR Manager",
+        title="Manager Intervention",
+        scenario="Queue aging -> bottleneck detection -> work redistribution -> escalation -> recovery improvement.",
+        queue_snapshot=manager_run.queue_snapshot,
+        payer_history=manager_run.payer_history,
+        claim_history=manager_run.claim_history,
+        prior_follow_up_activity=manager_run.prior_follow_up_activity,
+        recommendation_history=manager_run.recommendation_history,
+        steps=(
+            JourneyStep("1", "Queue Aging", "manager", "Human Action Required", "Human Action Required", "Manager identifies rising aging and declining recovery performance."),
+            JourneyStep("2", "Bottleneck Detection", "manager", "Human Action Required", "Human Action Required", "Blocked work and specialist overload are isolated."),
+            JourneyStep("3", "Work Redistribution", "manager", "Human Action Required", "Human Action Required", "High-value recoveries are reassigned to available specialists."),
+            JourneyStep("4", "Escalation", "manager", "Human Action Required", "Human Action Required", "Critical payer items are escalated before deadline."),
+            JourneyStep("5", "Recovery Improvement", "manager", "Human Action Required", "Completed", "Intervention changes queue outcomes and financial impact.", financial_impact=Decimal("15900.00")),
+        ),
+        metrics_before=manager_run.metrics_before,
+        metrics_after=manager_run.metrics_after,
+        final_task=manager_run.final_task,
+        final_outcome=manager_run.final_outcome,
+        institutional_memory_update=manager_run.institutional_memory_update,
+        workflow_trace=manager_run.workflow_trace,
     )
 
 

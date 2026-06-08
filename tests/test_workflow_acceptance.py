@@ -32,6 +32,27 @@ def test_ar_follow_up_workflow_acceptance():
     assert run["final_outcome"]["financial_result"] == "12500.00"
 
 
+def test_underpayment_recovery_workflow_acceptance():
+    run = execute_workflow_journey("underpayment_recovery").to_dict()
+
+    assert run["queue_snapshot"]["work_object_type"] == "Underpayment"
+    assert run["payer_history"]
+    assert run["claim_history"]
+    assert run["metrics_before"]["recovered_revenue"] == "0.00"
+    assert run["metrics_after"]["recovered_revenue"] == "400.00"
+    assert run["final_outcome"]["status"] == "recovered"
+
+
+def test_manager_intervention_workflow_acceptance():
+    run = execute_workflow_journey("manager_intervention").to_dict()
+
+    assert any(step["label"] == "Bottleneck Detection" for step in run["steps"])
+    assert any(step["label"] == "Work Redistribution" for step in run["steps"])
+    assert run["metrics_before"]["blocked_work"] >= 1
+    assert run["metrics_after"]["blocked_work"] == 0
+    assert run["institutional_memory_update"]["history_records_added"] >= 1
+
+
 def test_authorization_failure_workflow_acceptance():
     run = execute_workflow_journey("authorization_failure").to_dict()
 
