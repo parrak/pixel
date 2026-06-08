@@ -2,16 +2,11 @@ const metricsNode = document.getElementById("demoMetrics");
 const recoveryMetricsNode = document.getElementById("recoveryMetrics");
 const roleList = document.getElementById("roleList");
 const personaPanel = document.getElementById("personaPanel");
-const myWorkPanel = document.getElementById("myWorkPanel");
-const myQueuePanel = document.getElementById("myQueuePanel");
-const priorityPanel = document.getElementById("priorityPanel");
-const blockedPanel = document.getElementById("blockedPanel");
-const actionPanel = document.getElementById("actionPanel");
-const workTodayPanel = document.getElementById("mondayPanel");
-const moneyTrappedPanel = document.getElementById("organizationList");
 const graphPanel = document.getElementById("recommendationPanel");
 const timelinePanel = document.getElementById("decisionPanel");
 const outcomePanel = document.getElementById("outcomePanel");
+const commandPrimaryTabs = document.getElementById("commandPrimaryTabs");
+const commandPrimaryPanel = document.getElementById("commandPrimaryPanel");
 const commandTabs = document.getElementById("commandTabs");
 const commandTabPanel = document.getElementById("commandTabPanel");
 
@@ -193,10 +188,10 @@ function selectedWorkObject() {
 function renderAll() {
   renderMondayMetrics(snapshot().operator_os_landing);
   renderPersonaPanel(currentPersona());
-  renderPersonaSections(currentPersona());
   renderRecoveryMetrics(snapshot().revenue_recovery_command_center?.metrics || {});
   renderRoles(snapshot().persona_experiences);
-  renderRecoveryWorkspace();
+  renderPrimaryTabs("my_work");
+  renderSelectedWorkObject();
   renderCommandTabs("today");
 }
 
@@ -240,14 +235,6 @@ function personaBlock(label, value) {
   return `<div><span>${label}</span><p>${value}</p></div>`;
 }
 
-function renderPersonaSections(persona) {
-  renderTable(myWorkPanel, persona.my_work, ["title", "primary_object", "current_state", "expected_recovery"]);
-  renderTable(myQueuePanel, persona.my_queue, ["title", "owner", "dependency", "expected_recovery"]);
-  renderTable(priorityPanel, persona.todays_priorities || persona.my_work, ["title", "priority", "deadline_days_remaining", "expected_recovery"]);
-  renderTable(blockedPanel, persona.blocked_work || [], ["title", "dependency", "current_state", "expected_recovery"]);
-  renderTable(actionPanel, persona.recommended_actions || [], ["action", "current_state", "next_state", "dependency"]);
-}
-
 function renderRoles(personas) {
   roleList.innerHTML = "";
   Object.values(personas).forEach((persona) => {
@@ -263,25 +250,67 @@ function renderRoles(personas) {
   });
 }
 
-function renderRecoveryWorkspace() {
+function renderPrimaryTabs(active) {
+  const tabs = [
+    ["my_work", "My Work"],
+    ["my_queue", "My Queue"],
+    ["priorities", "Today's Priorities"],
+    ["blocked", "Blocked Work"],
+    ["actions", "Recommended Actions"],
+    ["work_today", "Work Today"],
+    ["money_trapped", "Money Trapped"],
+  ];
+  commandPrimaryTabs.innerHTML = tabs.map(([id, label]) => `<button class="tab-button${id === active ? " is-active" : ""}" data-tab="${id}">${label}</button>`).join("");
+  commandPrimaryTabs.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => renderPrimaryTabs(button.dataset.tab)));
+  renderPrimaryPanel(active);
+}
+
+function renderPrimaryPanel(active) {
+  const persona = currentPersona();
   const recovery = snapshot().revenue_recovery_command_center || {};
-  renderTable(workTodayPanel, recovery.work_today || [], ["claim_id", "payer", "denial_type", "expected_recovery", "owner", "deadline_days"]);
-  renderQueueCards(moneyTrappedPanel, recovery.money_trapped || []);
+  if (active === "my_queue") {
+    renderSelectableWorkTable(commandPrimaryPanel, persona.my_queue || [], ["title", "primary_object", "current_state", "owner", "expected_recovery"]);
+  } else if (active === "priorities") {
+    renderSelectableWorkTable(commandPrimaryPanel, persona.todays_priorities || [], ["title", "priority", "deadline_days_remaining", "expected_recovery"]);
+  } else if (active === "blocked") {
+    renderSelectableWorkTable(commandPrimaryPanel, persona.blocked_work || [], ["title", "dependency", "current_state", "expected_recovery"]);
+  } else if (active === "actions") {
+    renderTable(commandPrimaryPanel, persona.recommended_actions || [], ["action", "current_state", "next_state", "dependency"]);
+  } else if (active === "work_today") {
+    renderTable(commandPrimaryPanel, recovery.work_today || [], ["claim_id", "payer", "denial_type", "expected_recovery", "owner", "deadline_days"]);
+  } else if (active === "money_trapped") {
+    renderTable(commandPrimaryPanel, recovery.money_trapped || [], ["claim_id", "payer", "denial_type", "revenue_at_risk", "expected_recovery", "status"]);
+  } else {
+    renderSelectableWorkTable(commandPrimaryPanel, persona.my_work || [], ["title", "primary_object", "current_state", "dependency", "expected_recovery"]);
+  }
+}
+
+function renderSelectedWorkObject() {
   renderWorkObject(selectedWorkObject(), currentPersona());
 }
 
-function renderQueueCards(node, rows) {
-  if (!rows.length) {
-    node.innerHTML = "<p>No trapped money in this synthetic view.</p>";
+function renderSelectableWorkTable(node, rows, fields) {
+  if (!rows || !rows.length) {
+    node.innerHTML = "<p>No items in this synthetic view.</p>";
     return;
   }
-  node.innerHTML = rows.slice(0, 8).map((row, index) => `
-    <button class="queue-item${index === 0 ? " is-active" : ""}">
-      <strong>${row.claim_id || row.title || "Work item"}</strong>
-      <p>${row.payer || ""} · ${row.denial_type || row.status || ""}</p>
-      <p>At risk: ${formatMoney(row.revenue_at_risk)} · Expected: ${formatMoney(row.expected_recovery)}</p>
-    </button>
-  `).join("");
+  const safeRows = rows.slice(0, 14);
+  node.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>${fields.map((field) => `<th>${labelize(field)}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${safeRows.map((row) => `<tr class="selectable-row" data-work-object-id="${row.work_object_id || ""}">${fields.map((field) => `<td>${formatCell(row[field])}</td>`).join("")}</tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+  node.querySelectorAll(".selectable-row").forEach((row) => row.addEventListener("click", () => {
+    if (row.dataset.workObjectId) {
+      selectedWorkObjectId = row.dataset.workObjectId;
+      renderSelectedWorkObject();
+    }
+  }));
 }
 
 function renderWorkObject(workObject, persona) {

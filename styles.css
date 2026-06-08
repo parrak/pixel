@@ -324,6 +324,37 @@ main {
   margin-bottom: 24px;
 }
 
+.command-shell {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.command-main {
+  display: grid;
+  gap: 24px;
+}
+
+.command-primary-card {
+  min-height: 430px;
+}
+
+.spacious-panel {
+  min-height: 310px;
+}
+
+.command-detail-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr 0.85fr;
+  gap: 24px;
+}
+
+.detail-graph-card {
+  min-height: 420px;
+}
+
 .persona-layout-static {
   display: grid;
   grid-template-columns: 1.2fr 1.35fr 0.85fr 1fr;
@@ -349,7 +380,9 @@ main {
 }
 
 .role-card {
-  max-height: 520px;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
   overflow: auto;
 }
 
@@ -396,6 +429,14 @@ td {
   border-bottom: 1px solid var(--border);
   vertical-align: top;
   font-size: 0.92rem;
+}
+
+.selectable-row {
+  cursor: pointer;
+}
+
+.selectable-row:hover {
+  background: var(--pine-50);
 }
 
 th {
@@ -551,6 +592,8 @@ th {
   .demo-controls,
   .flow-strip,
   .simulator-grid,
+  .command-shell,
+  .command-detail-grid,
   .command-section-grid,
   .command-metric-strip,
   .persona-layout-static {

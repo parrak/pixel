@@ -40,63 +40,53 @@
         <div class="demo-metrics" id="demoMetrics"></div>
       </section>
 
-      <section class="story-card persona-command-card">
-        <div id="personaPanel" class="detail-panel">
-          <p>Loading role-specific operating view...</p>
-        </div>
-      </section>
-
-      <section class="command-section-grid" id="personaSections">
-        <div class="story-card"><h2>My Work</h2><div id="myWorkPanel" class="detail-panel"></div></div>
-        <div class="story-card"><h2>My Queue</h2><div id="myQueuePanel" class="detail-panel"></div></div>
-        <div class="story-card"><h2>Today's Priorities</h2><div id="priorityPanel" class="detail-panel"></div></div>
-        <div class="story-card"><h2>Blocked Work</h2><div id="blockedPanel" class="detail-panel"></div></div>
-        <div class="story-card"><h2>Recommended Actions</h2><div id="actionPanel" class="detail-panel"></div></div>
-      </section>
-
       <section class="command-metric-strip" id="recoveryMetrics"></section>
 
-      <section class="demo-controls command-workspace">
-        <div class="story-card role-card">
-          <h2>Role View</h2>
+      <section class="command-shell">
+        <aside class="story-card role-card">
+          <div class="eyebrow">Role View</div>
+          <h2>Operator Workbench</h2>
           <div id="roleList" class="queue-list"></div>
-        </div>
-        <div class="story-card">
-          <h2>Work Today</h2>
-          <div id="mondayPanel" class="detail-panel">
-            <p>Loading the workflow system of record...</p>
-          </div>
-        </div>
-      </section>
+        </aside>
 
-      <section class="demo-grid">
-        <div class="story-card">
-          <h2>Money Trapped</h2>
-          <div id="organizationList" class="queue-list"></div>
-        </div>
-        <div class="story-card">
-          <h2>Workflow Graph</h2>
-          <div id="recommendationPanel" class="detail-panel">
-            <p>Select a role to inspect work.</p>
-          </div>
-        </div>
-        <div class="story-card">
-          <h2>Timeline</h2>
-          <div id="decisionPanel" class="detail-panel">
-            <p>Timeline appears with the selected work object.</p>
-          </div>
-        </div>
-        <div class="story-card">
-          <h2>Outcome + Memory</h2>
-          <div id="outcomePanel" class="detail-panel">
-            <p>Recommended actions appear with the selected role.</p>
-          </div>
-        </div>
-      </section>
+        <div class="command-main">
+          <section class="story-card persona-command-card">
+            <div id="personaPanel" class="detail-panel">
+              <p>Loading role-specific operating view...</p>
+            </div>
+          </section>
 
-      <section class="story-card command-tabs-card">
-        <div class="command-tabs" id="commandTabs"></div>
-        <div id="commandTabPanel" class="detail-panel"></div>
+          <section class="story-card command-tabs-card command-primary-card">
+            <div class="command-tabs" id="commandPrimaryTabs"></div>
+            <div id="commandPrimaryPanel" class="detail-panel spacious-panel"></div>
+          </section>
+
+          <section class="command-detail-grid">
+            <div class="story-card detail-graph-card">
+              <h2>Workflow Graph</h2>
+              <div id="recommendationPanel" class="detail-panel">
+                <p>Select a role to inspect work.</p>
+              </div>
+            </div>
+            <div class="story-card">
+              <h2>Timeline</h2>
+              <div id="decisionPanel" class="detail-panel">
+                <p>Timeline appears with the selected work object.</p>
+              </div>
+            </div>
+            <div class="story-card">
+              <h2>Outcome + Memory</h2>
+              <div id="outcomePanel" class="detail-panel">
+                <p>Recommended actions appear with the selected role.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="story-card command-tabs-card">
+            <div class="command-tabs" id="commandTabs"></div>
+            <div id="commandTabPanel" class="detail-panel spacious-panel"></div>
+          </section>
+        </div>
       </section>
     </main>
 
