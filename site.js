@@ -9,6 +9,192 @@ const actionPanel = document.getElementById("outcomePanel");
 let portfolioState = null;
 let selectedRole = "biller";
 
+const fallbackPortfolio = {
+  portfolio_snapshot: {
+    operator_os_landing: {
+      revenue_at_risk: "2500000.00",
+      open_work: 126,
+      critical_appeals: 14,
+      authorizations_at_risk: 8,
+      coding_reviews_pending: 22,
+    },
+    persona_experiences: {
+      coder: {
+        role: "coder",
+        label: "Coding Specialist",
+        operator_question: "Am I coding this encounter correctly?",
+        primary_objects: ["Patient", "Encounter", "Procedure", "Documentation", "Coding Review", "Charge Capture"],
+        navigation: ["My Reviews", "Documentation Gaps", "Coding Queue", "Procedure Explorer", "Completed Reviews", "Knowledge Base"],
+        metrics: { open_work: 22, blocked_work: 4 },
+        my_work: [
+          {
+            work_object_id: "WO-FILE-CODING-001",
+            title: "Arthroscopy encounter coding review",
+            primary_object: "Encounter",
+            current_state: "Coding Review",
+            expected_recovery: "1800.00",
+            owner: "Coding Specialist",
+            dependency: "Waiting on Coding Review",
+          },
+        ],
+        my_queue: [],
+        recommended_actions: [
+          {
+            current_state: "Coding Review",
+            next_state: "Charge Capture",
+            action: "Validate documentation supports coded procedure before claim submission.",
+          },
+        ],
+      },
+      denial_specialist: {
+        role: "denial_specialist",
+        label: "Denial Specialist",
+        operator_question: "Which denials can I recover today?",
+        primary_objects: ["Claim", "Denial", "Appeal", "Evidence"],
+        navigation: ["My Denials", "Appeals", "Evidence", "Payer Playbooks", "Completed Recoveries"],
+        metrics: { open_work: 31, blocked_work: 9 },
+        my_work: [
+          {
+            work_object_id: "WO-FILE-DENIAL-001",
+            title: "United medical necessity appeal",
+            primary_object: "Denial",
+            current_state: "Appeal",
+            expected_recovery: "4250.00",
+            owner: "Sarah Chen",
+            dependency: "Waiting on Payer",
+          },
+        ],
+        my_queue: [],
+        recommended_actions: [
+          {
+            current_state: "Appeal",
+            next_state: "Resolution",
+            action: "Track payer response and escalate if no acknowledgement before deadline.",
+          },
+        ],
+      },
+      biller: {
+        role: "biller",
+        label: "AR Specialist",
+        operator_question: "Which balances can I recover or escalate?",
+        primary_objects: ["Account", "Claim", "Balance", "Recovery Workflow"],
+        navigation: ["My AR Queue", "Escalations", "High-Dollar Accounts", "Underpayments", "Completed Recoveries"],
+        metrics: { open_work: 47, blocked_work: 11 },
+        my_work: [
+          {
+            work_object_id: "WO-FILE-AR-001",
+            title: "90+ day no-payment follow-up",
+            primary_object: "Account",
+            current_state: "Recovery Workflow",
+            expected_recovery: "12500.00",
+            owner: "Daniel Ortiz",
+            dependency: "Waiting on Payer",
+          },
+        ],
+        my_queue: [],
+        recommended_actions: [
+          {
+            current_state: "Recovery Workflow",
+            next_state: "Resolution",
+            action: "Call payer, document reference number, and escalate if response is not committed today.",
+          },
+        ],
+      },
+      auth_specialist: {
+        role: "auth_specialist",
+        label: "Authorization Specialist",
+        operator_question: "Which scheduled procedures are missing authorization work?",
+        primary_objects: ["Scheduled Procedure", "Authorization", "Requirements"],
+        navigation: ["Pending Auths", "Missing Requirements", "Expiring Auths", "Escalations"],
+        metrics: { open_work: 8, blocked_work: 3 },
+        my_work: [
+          {
+            work_object_id: "WO-FILE-AUTH-001",
+            title: "Missing authorization before scheduled case",
+            primary_object: "Scheduled Procedure",
+            current_state: "Authorization",
+            expected_recovery: "6200.00",
+            owner: "Authorization Specialist",
+            dependency: "Waiting on Authorization",
+          },
+        ],
+        my_queue: [],
+        recommended_actions: [
+          {
+            current_state: "Authorization",
+            next_state: "Procedure",
+            action: "Confirm payer requirements and coordinate missing authorization before date of service.",
+          },
+        ],
+      },
+      manager: {
+        role: "manager",
+        label: "Manager",
+        operator_question: "Where should I intervene to unblock teams?",
+        primary_objects: ["Teams", "Queues", "Capacity", "Productivity"],
+        navigation: ["Operations", "Assignments", "Escalations", "Blockers", "Team Performance"],
+        metrics: { open_work: 126, blocked_work: 27 },
+        my_work: [],
+        my_queue: [],
+        recommended_actions: [],
+      },
+      vp_revenue_cycle: {
+        role: "vp_revenue_cycle",
+        label: "VP Revenue Cycle",
+        operator_question: "Which operational bottlenecks are putting revenue at risk?",
+        primary_objects: ["Revenue", "Risk", "Operational Bottlenecks"],
+        navigation: ["Operational Health", "Revenue At Risk", "Payer Performance", "Interventions"],
+        metrics: { open_work: 126, blocked_work: 27 },
+        my_work: [],
+        my_queue: [],
+        recommended_actions: [],
+      },
+    },
+    work_objects: [],
+  },
+};
+
+fallbackPortfolio.portfolio_snapshot.persona_experiences.coder.my_queue = fallbackPortfolio.portfolio_snapshot.persona_experiences.coder.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.denial_specialist.my_queue = fallbackPortfolio.portfolio_snapshot.persona_experiences.denial_specialist.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.biller.my_queue = fallbackPortfolio.portfolio_snapshot.persona_experiences.biller.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.auth_specialist.my_queue = fallbackPortfolio.portfolio_snapshot.persona_experiences.auth_specialist.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.manager.my_work = fallbackPortfolio.portfolio_snapshot.persona_experiences.biller.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.manager.my_queue = fallbackPortfolio.portfolio_snapshot.persona_experiences.biller.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.manager.recommended_actions = fallbackPortfolio.portfolio_snapshot.persona_experiences.biller.recommended_actions;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.vp_revenue_cycle.my_work = fallbackPortfolio.portfolio_snapshot.persona_experiences.denial_specialist.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.vp_revenue_cycle.my_queue = fallbackPortfolio.portfolio_snapshot.persona_experiences.denial_specialist.my_work;
+fallbackPortfolio.portfolio_snapshot.persona_experiences.vp_revenue_cycle.recommended_actions = fallbackPortfolio.portfolio_snapshot.persona_experiences.denial_specialist.recommended_actions;
+fallbackPortfolio.portfolio_snapshot.work_objects = Object.values(fallbackPortfolio.portfolio_snapshot.persona_experiences)
+  .flatMap((persona) => persona.my_work)
+  .filter((item, index, items) => items.findIndex((candidate) => candidate.work_object_id === item.work_object_id) === index)
+  .map((item) => ({
+    work_object_id: item.work_object_id,
+    title: item.title,
+    timeline: [
+      { label: "Claim Submitted", detail: "Claim entered the workflow system of record." },
+      { label: "Work Assigned", detail: `${item.title} assigned to ${item.owner}.` },
+      { label: "Evidence Generated", detail: "Citron assembled evidence and next-step work product." },
+    ],
+    institutional_memory: [{ summary: "Local file demo memory: decisions and outcomes persist with the work object." }],
+    workflow_graph: {
+      current_state: item.current_state,
+      owner: item.owner,
+      waiting_on: item.dependency,
+      days_in_state: 12,
+      deadline_days_remaining: 8,
+      expected_recovery: item.expected_recovery,
+      stages: [
+        { label: "Patient", status: "complete", owner: "Facility" },
+        { label: "Procedure", status: "complete", owner: "Facility" },
+        { label: "Coding", status: item.current_state === "Coding Review" ? "current" : "complete", owner: "Coding Team" },
+        { label: "Claim", status: "complete", owner: "AR Specialist" },
+        { label: item.current_state, status: "current", owner: item.owner },
+        { label: "Resolution", status: "next", owner: item.owner },
+        { label: "Payment", status: "pending", owner: "Payer" },
+      ],
+    },
+  }));
+
 function formatMoney(value) {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -17,6 +203,9 @@ function formatMoney(value) {
 }
 
 async function fetchPortfolio() {
+  if (window.location.protocol === "file:") {
+    return fallbackPortfolio;
+  }
   const response = await fetch("/api/summary");
   if (!response.ok) {
     throw new Error("Failed to load synthetic portfolio");
@@ -31,7 +220,11 @@ async function bootDemo() {
     renderRoles(portfolioState.portfolio_snapshot.persona_experiences);
     renderPersona(selectedRole);
   } catch (error) {
-    mondayPanel.innerHTML = `<p>${error.message}</p>`;
+    portfolioState = fallbackPortfolio;
+    renderOsLanding(portfolioState.portfolio_snapshot.operator_os_landing);
+    renderRoles(portfolioState.portfolio_snapshot.persona_experiences);
+    renderPersona(selectedRole);
+    mondayPanel.insertAdjacentHTML("beforeend", `<p><strong>Local fallback:</strong> ${error.message}</p>`);
   }
 }
 
