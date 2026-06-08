@@ -17,7 +17,7 @@ from asc_rcm_lite.copilot.payer_intelligence_copilot import PayerIntelligenceCop
 from asc_rcm_lite.copilot.workflow_assistant import WorkflowAssistant
 from asc_rcm_lite.journeys import execute_journey
 from asc_rcm_lite.operations import OperationalTask, simulate_acquisition
-from asc_rcm_lite.personas import build_operator_os_landing, build_persona_experiences
+from asc_rcm_lite.personas import PERSONA_CONFIGS, build_operator_os_landing, build_persona_experiences
 from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, run_pipeline
 
 
@@ -114,6 +114,42 @@ def _render_persona_section(container, title: str, rows: list[dict[str, object]]
         container.dataframe(rows, use_container_width=True)
     else:
         container.info("No items for this role.")
+
+
+def _persona_card_html(persona: dict[str, object], role_key: str, fallback_label: str) -> str:
+    config = PERSONA_CONFIGS.get(role_key, {})
+    label = persona.get("label") or config.get("label") or fallback_label
+    question = persona.get("operator_question") or config.get("operator_question") or "What work needs to get done?"
+    primary_objects = persona.get("primary_objects") or config.get("primary_objects") or ["Work Object"]
+    navigation = persona.get("navigation") or config.get("navigation") or ["My Work", "My Queue", "Recommended Actions"]
+    metrics = persona.get("metrics") or {}
+    current_item = (persona.get("my_work") or persona.get("my_queue") or [{}])[0]
+    return f"""
+    <div class="card">
+      <div class="eyebrow">Role-Specific OS</div>
+      <h3 style="margin:0.25rem 0;">{label}</h3>
+      <p style="margin:0.35rem 0 0.85rem;color:var(--ink-500);">{question}</p>
+      <div class="persona-layout">
+        <div>
+          <span>Primary Objects</span>
+          <div class="persona-nav">{''.join(f"<strong>{item}</strong>" for item in primary_objects)}</div>
+        </div>
+        <div>
+          <span>Navigation</span>
+          <div class="persona-nav">{''.join(f"<strong>{item}</strong>" for item in navigation)}</div>
+        </div>
+        <div>
+          <span>Queue State</span>
+          <p><strong>{metrics.get('open_work', '-')}</strong> open work · <strong>{metrics.get('blocked_work', '-')}</strong> blocked · <strong>{metrics.get('urgent_work', '-')}</strong> urgent</p>
+        </div>
+        <div>
+          <span>Current Object</span>
+          <p><strong>{current_item.get('title', 'No current work object')}</strong><br/>
+          {current_item.get('primary_object', 'Work Object')} · {current_item.get('current_state', '-')} · waiting on {current_item.get('dependency', '-')}</p>
+        </div>
+      </div>
+    </div>
+    """
 
 
 st.set_page_config(page_title="Citron Health Workflow System", layout="wide")
@@ -250,6 +286,25 @@ st.markdown(
         border-radius: 999px;
         padding: 0.45rem 0.75rem;
         background: var(--surface);
+    }
+    .persona-layout {
+        display: grid;
+        grid-template-columns: 1.15fr 1.35fr 0.8fr 1fr;
+        gap: 0.85rem;
+        align-items: start;
+    }
+    .persona-layout span {
+        display: block;
+        color: var(--ink-500);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+    .persona-layout p {
+        margin: 0.45rem 0 0;
+        color: var(--ink-500);
     }
     .eyebrow { color: #d8f0c7; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.75rem; font-weight: 700; }
     .metric-label { color: var(--ink-500); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
@@ -424,17 +479,7 @@ with tabs[0]:
         "The center shows what to work, what to escalate, what is blocked, and where money is trapped."
     )
     selected_persona = persona_experiences.get(selected_role_key, {})
-    st.markdown(
-        f"""
-        <div class="card">
-          <div class="eyebrow">Role-Specific OS</div>
-          <h3 style="margin:0.25rem 0;">{selected_persona.get('label', selected_role)}</h3>
-          <p style="margin:0.35rem 0 0.6rem;color:var(--ink-500);">{selected_persona.get('operator_question', 'What work needs to get done?')}</p>
-          <div class="persona-nav"><span>Navigation</span>{''.join(f"<strong>{item}</strong>" for item in selected_persona.get('navigation', []))}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(_persona_card_html(selected_persona, selected_role_key, selected_role), unsafe_allow_html=True)
     persona_cols = st.columns(5)
     _render_persona_section(persona_cols[0], "My Work", selected_persona.get("my_work", []))
     _render_persona_section(persona_cols[1], "My Queue", selected_persona.get("my_queue", []))
