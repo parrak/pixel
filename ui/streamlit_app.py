@@ -82,6 +82,31 @@ def _workflow_graph_html(graph: dict[str, object]) -> str:
     """
 
 
+def _workflow_graph_for(item: dict[str, object]) -> dict[str, object]:
+    graph = item.get("workflow_graph")
+    if graph:
+        return graph
+    owner = item.get("owner_name") or ROLE_LABELS.get(str(item.get("owner_role")), str(item.get("owner_role", "Operator")))
+    current_state = item.get("workflow_status") or item.get("status") or "Human Action Required"
+    return {
+        "current_state": current_state,
+        "owner": owner,
+        "waiting_on": "Waiting on Operator Review",
+        "days_in_state": "-",
+        "deadline_days_remaining": "-",
+        "expected_recovery": item.get("financial_impact"),
+        "stages": [
+            {"label": "Patient", "status": "complete", "owner": "Facility"},
+            {"label": "Procedure", "status": "complete", "owner": "Facility"},
+            {"label": "Coding", "status": "complete", "owner": "Coding Team"},
+            {"label": "Claim", "status": "complete", "owner": "AR Specialist"},
+            {"label": current_state, "status": "current", "owner": owner},
+            {"label": "Next Action", "status": "next", "owner": owner},
+            {"label": "Resolution", "status": "pending", "owner": "Operator"},
+        ],
+    }
+
+
 st.set_page_config(page_title="Citron Health Workflow System", layout="wide")
 st.markdown(f"<style>{THEME_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 st.markdown(
@@ -550,7 +575,7 @@ with tabs[1]:
         evidence_col.dataframe(selected_account_workspace["evidence"], use_container_width=True)
         artifact_col.dataframe(selected_account_workspace["generated_artifacts"], use_container_width=True)
         st.markdown("#### Workflow Graph")
-        st.markdown(_workflow_graph_html(selected_account_workspace["open_work_objects"][0]["workflow_graph"]), unsafe_allow_html=True)
+        st.markdown(_workflow_graph_html(_workflow_graph_for(selected_account_workspace["open_work_objects"][0])), unsafe_allow_html=True)
         st.dataframe(selected_account_workspace["activity_history"], use_container_width=True)
     else:
         st.info("No account workspace available.")
@@ -599,7 +624,7 @@ with tabs[2]:
     timeline_col.dataframe(selected_work_object["timeline"], use_container_width=True)
     evidence_col.dataframe(selected_work_object["evidence"], use_container_width=True)
     st.markdown("#### Workflow Graph")
-    st.markdown(_workflow_graph_html(selected_work_object["workflow_graph"]), unsafe_allow_html=True)
+    st.markdown(_workflow_graph_html(_workflow_graph_for(selected_work_object)), unsafe_allow_html=True)
     docs_col, memory_col = st.columns(2)
     docs_col.dataframe(selected_work_object["documents"], use_container_width=True)
     memory_col.dataframe(selected_work_object["institutional_memory"], use_container_width=True)
@@ -662,7 +687,7 @@ with tabs[4]:
         left.dataframe(selected_denial["stages"], use_container_width=True)
         right.dataframe(selected_denial["timeline"], use_container_width=True)
         st.markdown("#### Workflow Graph")
-        st.markdown(_workflow_graph_html(selected_denial["workflow_graph"]), unsafe_allow_html=True)
+        st.markdown(_workflow_graph_html(_workflow_graph_for(selected_denial)), unsafe_allow_html=True)
         artifact_col, evidence_col = st.columns(2)
         artifact_col.dataframe(selected_denial["artifacts"], use_container_width=True)
         evidence_col.dataframe(selected_denial["evidence"], use_container_width=True)
@@ -687,7 +712,7 @@ with tabs[5]:
         left.dataframe(selected_ar["actions"], use_container_width=True)
         right.dataframe(selected_ar["timeline"], use_container_width=True)
         st.markdown("#### Workflow Graph")
-        st.markdown(_workflow_graph_html(selected_ar["workflow_graph"]), unsafe_allow_html=True)
+        st.markdown(_workflow_graph_html(_workflow_graph_for(selected_ar)), unsafe_allow_html=True)
         evidence_col, artifact_col = st.columns(2)
         evidence_col.dataframe(selected_ar["evidence"], use_container_width=True)
         artifact_col.dataframe(selected_ar["generated_artifacts"], use_container_width=True)
