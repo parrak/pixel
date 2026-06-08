@@ -17,6 +17,7 @@ from asc_rcm_lite.copilot.payer_intelligence_copilot import PayerIntelligenceCop
 from asc_rcm_lite.copilot.workflow_assistant import WorkflowAssistant
 from asc_rcm_lite.journeys import execute_journey
 from asc_rcm_lite.operations import OperationalTask, simulate_acquisition
+from asc_rcm_lite.personas import build_operator_os_landing, build_persona_experiences
 from asc_rcm_lite.pipeline import DEFAULT_AS_OF_DATE, run_pipeline
 
 
@@ -105,6 +106,14 @@ def _workflow_graph_for(item: dict[str, object]) -> dict[str, object]:
             {"label": "Resolution", "status": "pending", "owner": "Operator"},
         ],
     }
+
+
+def _render_persona_section(container, title: str, rows: list[dict[str, object]]) -> None:
+    container.markdown(f"**{title}**")
+    if rows:
+        container.dataframe(rows, use_container_width=True)
+    else:
+        container.info("No items for this role.")
 
 
 st.set_page_config(page_title="Citron Health Workflow System", layout="wide")
@@ -285,6 +294,10 @@ recovery_outcomes = portfolio.get("recovery_outcome_tracking", {})
 nimble_recovery = portfolio.get("nimble_recovery_evaluation", {})
 persona_experiences = portfolio.get("persona_experiences", {})
 operator_os_landing = portfolio.get("operator_os_landing", {})
+if not persona_experiences and all_work_objects:
+    persona_experiences = build_persona_experiences(all_work_objects, recovery_center=recovery_center)
+if not operator_os_landing and persona_experiences:
+    operator_os_landing = build_operator_os_landing(persona_experiences=persona_experiences, recovery_center=recovery_center)
 orgs = portfolio["organizations"]
 org_names = [org["name"] for org in orgs]
 st.sidebar.image(str(LOGO_PATH), width=44)
@@ -423,11 +436,11 @@ with tabs[0]:
         unsafe_allow_html=True,
     )
     persona_cols = st.columns(5)
-    persona_cols[0].dataframe(selected_persona.get("my_work", []), use_container_width=True)
-    persona_cols[1].dataframe(selected_persona.get("my_queue", []), use_container_width=True)
-    persona_cols[2].dataframe(selected_persona.get("todays_priorities", []), use_container_width=True)
-    persona_cols[3].dataframe(selected_persona.get("blocked_work", []), use_container_width=True)
-    persona_cols[4].dataframe(selected_persona.get("recommended_actions", []), use_container_width=True)
+    _render_persona_section(persona_cols[0], "My Work", selected_persona.get("my_work", []))
+    _render_persona_section(persona_cols[1], "My Queue", selected_persona.get("my_queue", []))
+    _render_persona_section(persona_cols[2], "Today's Priorities", selected_persona.get("todays_priorities", []))
+    _render_persona_section(persona_cols[3], "Blocked Work", selected_persona.get("blocked_work", []))
+    _render_persona_section(persona_cols[4], "Recommended Actions", selected_persona.get("recommended_actions", []))
     recovery_metrics = recovery_center.get("metrics", {})
     recovery_cols = st.columns(5)
     recovery_cols[0].metric("Revenue At Risk", _format_money(recovery_metrics.get("revenue_at_risk")))
